@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM 2026 – Lagindelning</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --gold: #f5c518; --gold-dark: #c4930d; }
+
+html, body {
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background: #0e1a10;
+  color: white;
+  overflow-x: hidden;
+}
+
+.pitch-bg {
+  position: fixed; inset: 0; z-index: 0;
+  background: repeating-linear-gradient(180deg,#1a5c28 0px,#1a5c28 60px,#1e6b30 60px,#1e6b30 120px);
+}
+.pitch-overlay {
+  position: fixed; inset: 0; z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.65) 100%);
+}
+
+.app {
+  position: relative; z-index: 2;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 1.5rem 1rem 3rem;
+  gap: 1rem;
+}
+
+.header { text-align: center; }
+.header-trophy { font-size: 2.2rem; animation: float 3s ease-in-out infinite; display: block; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+.header-title {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 3rem; letter-spacing: 0.1em; color: var(--gold); line-height: 1;
+  text-shadow: 2px 2px 0 var(--gold-dark), 0 0 40px rgba(245,197,24,0.25);
+}
+.header-sub { font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+
+.card {
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 1.5rem;
+  width: 100%; max-width: 560px;
+  backdrop-filter: blur(12px);
+}
+
+.screen { display: none; flex-direction: column; align-items: center; gap: 1rem; }
+.screen.active { display: flex; }
+
+.label-text {
+  font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255,255,255,0.45); margin-bottom: 5px;
+}
+.name-input {
+  width: 100%; padding: 0.85rem 1.1rem;
+  font-size: 1rem; font-family: 'Inter', sans-serif;
+  background: rgba(255,255,255,0.07);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 8px; color: white; outline: none;
+  transition: border-color 0.2s;
+}
+.name-input::placeholder { color: rgba(255,255,255,0.3); }
+.name-input:focus { border-color: var(--gold); }
+
+.btn {
+  width: 100%; padding: 0.9rem;
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.25rem; letter-spacing: 0.1em;
+  border: none; border-radius: 8px; cursor: pointer;
+  transition: transform 0.12s, opacity 0.12s;
+}
+.btn:active { transform: scale(0.98); }
+.btn-gold { background: var(--gold); color: #1a1a1a; box-shadow: 0 4px 20px rgba(245,197,24,0.28); }
+.btn-gold:hover { background: #ffd93d; }
+.btn-ghost {
+  background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.18);
+  color: white; font-family: 'Inter', sans-serif; font-size: 0.88rem; letter-spacing: 0; font-weight: 500;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.16); }
+
+/* ── STEP INDICATOR ── */
+.steps {
+  display: flex; align-items: center; gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+.step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); transition: background 0.3s;
+}
+.step-dot.active { background: var(--gold); }
+.step-dot.done { background: rgba(245,197,24,0.4); }
+
+/* ── SCREEN 0: TEAM PICKER ── */
+.screen-title {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.4rem; letter-spacing: 0.07em; color: white; text-align: center;
+}
+.screen-subtitle {
+  font-size: 0.78rem; color: rgba(255,255,255,0.45); text-align: center; margin-top: -0.5rem;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+  width: 100%;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.team-grid::-webkit-scrollbar { width: 4px; }
+.team-grid::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 2px; }
+.team-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+.team-toggle {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 0.5rem 0.25rem;
+  border-radius: 10px; cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  user-select: none;
+}
+.team-toggle:hover { background: rgba(255,255,255,0.1); transform: scale(1.03); }
+.team-toggle.selected {
+  border-color: var(--gold);
+  background: rgba(245,197,24,0.12);
+  box-shadow: 0 0 0 1px rgba(245,197,24,0.3);
+}
+.team-toggle-flag { font-size: 1.6rem; line-height: 1; }
+.team-toggle-name {
+  font-size: 0.56rem; color: rgba(255,255,255,0.7); text-align: center;
+  line-height: 1.2; max-width: 56px;
+}
+.team-toggle.selected .team-toggle-name { color: var(--gold); font-weight: 600; }
+.team-toggle-check {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem;
+}
+.team-toggle.selected .team-toggle-check {
+  background: var(--gold); border-color: var(--gold); color: #1a1a1a;
+}
+
+.selection-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 0.6rem 0.75rem;
+  background: rgba(255,255,255,0.06); border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.selection-count { font-size: 0.82rem; color: rgba(255,255,255,0.65); }
+.selection-count strong { color: var(--gold); }
+.btn-select-all {
+  font-size: 0.75rem; color: rgba(255,255,255,0.5); cursor: pointer;
+  background: none; border: none; padding: 0; text-decoration: underline;
+}
+.btn-select-all:hover { color: white; }
+
+/* ── CAMERA ── */
+.cam-outer {
+  position: relative; width: 260px; height: 260px;
+  border-radius: 50%; overflow: hidden;
+  border: 3px solid var(--gold);
+  box-shadow: 0 0 0 5px rgba(245,197,24,0.12), 0 8px 30px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+}
+#video { width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block; }
+.cam-hint { font-size:0.8rem;color:rgba(255,255,255,0.5);text-align:center; }
+.cam-name {
+  font-family:'Bebas Neue',Impact,sans-serif;
+  font-size:1.5rem;letter-spacing:0.06em;text-align:center;color:white;
+}
+
+/* ── SPINNING ── */
+.spin-ball { font-size:4rem;animation:spinBall 0.35s linear infinite;display:block;text-align:center; }
+@keyframes spinBall{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.spin-name {
+  font-family:'Bebas Neue',Impact,sans-serif;
+  font-size:2rem;letter-spacing:0.06em;color:white;text-align:center;
+}
+.loading-dots{text-align:center;}
+.loading-dots span{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--gold);margin:0 3px;
+  animation:bounce 0.9s ease-in-out infinite;
+}
+.loading-dots span:nth-child(2){animation-delay:.15s}
+.loading-dots span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* ── PLAYER CARD ── */
+.player-card {
+  width:100%;border-radius:14px;overflow:hidden;position:relative;
+  box-shadow:0 12px 50px rgba(0,0,0,0.6);
+  animation:cardReveal 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+@keyframes cardReveal{from{transform:scale(0.85) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.card-top {
+  position:relative;height:200px;
+  display:flex;align-items:flex-end;overflow:hidden;
+}
+.card-photo {
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;transform:scaleX(-1);
+}
+.card-photo-placeholder {
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;font-size:5rem;
+}
+.card-top-gradient {
+  position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 55%);
+  z-index:1;
+}
+.card-flag-big { position:absolute;top:12px;right:14px;z-index:2;font-size:2.8rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
+.card-number {
+  position:absolute;top:10px;left:14px;z-index:2;
+  font-family:'Bebas Neue',Impact,sans-serif;
+  font-size:3.5rem;line-height:1;color:rgba(255,255,255,0.12);letter-spacing:0.02em;
+}
+.card-bottom-overlay { position:relative;z-index:2;padding:0.6rem 1rem 0.8rem;width:100%; }
+.card-player-name {
+  font-family:'Bebas Neue',Impact,sans-serif;
+  font-size:2rem;letter-spacing:0.06em;color:white;line-height:1;
+  text-shadow:0 2px 8px rgba(0,0,0,0.8);
+}
+.card-team-name { font-size:0.75rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-top:2px; }
+.card-bottom-bar { display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem; }
+.card-stat { display:flex;flex-direction:column;align-items:center;gap:2px; }
+.card-stat-val { font-family:'Bebas Neue',Impact,sans-serif;font-size:1.5rem;line-height:1;color:white; }
+.card-stat-lbl { font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45); }
+.card-divider { width:1px;height:32px;background:rgba(255,255,255,0.15); }
+
+/* ── FORMATION PITCH ── */
+.pitch-card {
+  width:100%;position:relative;
+  border-radius:12px;overflow:hidden;
+  border:2px solid rgba(255,255,255,0.15);
+  background:repeating-linear-gradient(180deg,#1a5c28 0px,#1a5c28 32px,#1e6b30 32px,#1e6b30 64px);
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
+}
+.pitch-svg-overlay { position:absolute;inset:0;pointer-events:none; }
+.pitch-svg-overlay svg { width:100%;height:100%; }
+.formation-rows { position:relative;z-index:2;padding:0.9rem 0.5rem;display:flex;flex-direction:column;gap:0.45rem; }
+.formation-row { display:flex;justify-content:center;gap:0.35rem; }
+.player-slot { display:flex;flex-direction:column;align-items:center;gap:3px;width:60px; }
+.player-circle {
+  width:46px;height:46px;border-radius:50%;overflow:hidden;
+  border:2px solid rgba(255,255,255,0.3);
+  background:rgba(0,0,0,0.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.6rem;color:rgba(255,255,255,0.3);
+  flex-shrink:0;position:relative;
+}
+.player-circle img { width:100%;height:100%;object-fit:cover;transform:scaleX(-1); }
+.player-circle.has-avatar { border-color:rgba(255,255,255,0.6); }
+.player-circle.is-new {
+  border-color:var(--gold);
+  box-shadow:0 0 14px var(--gold),0 0 0 3px rgba(245,197,24,0.22);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 14px var(--gold),0 0 0 3px rgba(245,197,24,0.22)}
+  50%{box-shadow:0 0 22px var(--gold),0 0 0 5px rgba(245,197,24,0.38)}
+}
+.player-label { font-size:0.56rem;color:rgba(255,255,255,0.75);text-align:center;max-width:58px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2; }
+.player-label.is-new { color:var(--gold);font-weight:600; }
+.pos-lbl { font-size:0.5rem;color:rgba(255,255,255,0.35); }
+
+/* ── TEAMS SUMMARY ── */
+.teams-section { width:100%;max-width:560px; }
+.teams-section-title { font-size:0.68rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.14em;text-align:center;margin-bottom:0.5rem; }
+.team-pills { display:flex;flex-wrap:wrap;gap:0.35rem;justify-content:center; }
+.team-pill { padding:0.28rem 0.7rem;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:20px;font-size:0.76rem;color:rgba(255,255,255,0.65); }
+
+.actions-row { display:flex;gap:0.6rem;width:100%; }
+.actions-row .btn { flex:1; }
+
+/* CONFETTI */
+.confetti-piece { position:fixed;pointer-events:none;z-index:999;width:8px;height:8px;border-radius:2px;animation:cfFall linear forwards; }
+@keyframes cfFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+<div class="pitch-bg"></div>
+<div class="pitch-overlay"></div>
+
+<div class="app">
+  <div class="header">
+    <span class="header-trophy">🏆</span>
+    <div class="header-title">VM 2026</div>
+    <div class="header-sub">Sommarfest · Lagindelning</div>
+  </div>
+
+  <!-- SCREEN 0: Team picker -->
+  <div class="card screen active" id="screen-teams">
+    <div class="steps">
+      <div class="step-dot active" id="step0"></div>
+      <div class="step-dot" id="step1"></div>
+      <div class="step-dot" id="step2"></div>
+      <div class="step-dot" id="step3"></div>
+    </div>
+    <div class="screen-title">Välj era lag</div>
+    <div class="screen-subtitle">Markera vilka VM-lag som ska vara med i festen</div>
+
+    <div class="selection-bar">
+      <div class="selection-count"><strong id="sel-count">0</strong> lag valda</div>
+      <button class="btn-select-all" id="btn-select-all">Välj alla</button>
+    </div>
+
+    <div class="team-grid" id="team-grid"></div>
+
+    <button class="btn btn-gold" id="btn-confirm-teams">BEKRÄFTA LAG →</button>
+  </div>
+
+  <!-- SCREEN 1: Name -->
+  <div class="card screen" id="screen-name">
+    <div class="steps">
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot" id="step1b"></div>
+      <div class="step-dot"></div>
+    </div>
+    <div style="width:100%">
+      <div class="label-text">Ditt namn</div>
+      <input class="name-input" id="name-input" type="text" placeholder="Skriv ditt namn..." maxlength="24" autocomplete="off" />
+    </div>
+    <button class="btn btn-gold" id="btn-to-camera">📸 TA SELFIE &amp; LOTTA LAG</button>
+    <button class="btn btn-ghost" id="btn-skip-camera">🎲 Lotta utan selfie</button>
+    <button class="btn btn-ghost" id="btn-back-to-teams" style="font-size:0.8rem;padding:0.6rem">← Ändra lagval</button>
+  </div>
+
+  <!-- SCREEN 2: Camera -->
+  <div class="card screen" id="screen-camera">
+    <div class="cam-name" id="cam-label"></div>
+    <div class="cam-outer">
+      <video id="video" autoplay muted playsinline></video>
+    </div>
+    <div class="cam-hint">Centrera ditt ansikte – tryck sen på Ta bild</div>
+    <button class="btn btn-gold" id="btn-snap">📸 TA BILD</button>
+    <button class="btn btn-ghost" id="btn-cam-back">← Tillbaka</button>
+  </div>
+
+  <!-- SCREEN 3: Spin -->
+  <div class="card screen" id="screen-spin" style="padding:2.5rem 1.5rem">
+    <div class="spin-name" id="spin-label"></div>
+    <span class="spin-ball">⚽</span>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+    <div style="font-size:0.78rem;color:rgba(255,255,255,0.45);letter-spacing:0.12em;text-transform:uppercase">Lottar lag...</div>
+  </div>
+
+  <!-- SCREEN 4: Result -->
+  <div class="screen" id="screen-result" style="width:100%;max-width:560px;gap:1rem">
+    <div class="player-card" id="player-card">
+      <div class="card-top" id="card-top">
+        <img class="card-photo" id="card-photo" src="" alt="" style="display:none" />
+        <div class="card-photo-placeholder" id="card-placeholder"></div>
+        <div class="card-top-gradient"></div>
+        <div class="card-flag-big" id="card-flag"></div>
+        <div class="card-number" id="card-number"></div>
+        <div class="card-bottom-overlay">
+          <div class="card-player-name" id="card-pname"></div>
+          <div class="card-team-name" id="card-tname"></div>
+        </div>
+      </div>
+      <div class="card-bottom-bar" id="card-bottom-bar"></div>
+    </div>
+
+    <div class="pitch-card" id="pitch-card">
+      <div class="pitch-svg-overlay">
+        <svg viewBox="0 0 400 380" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="0" y1="190" x2="400" y2="190" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <circle cx="200" cy="190" r="42" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <rect x="120" y="0" width="160" height="60" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <rect x="120" y="320" width="160" height="60" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="formation-rows" id="formation-display"></div>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-ghost" id="btn-new-player">← Ny spelare</button>
+      <button class="btn btn-ghost" id="btn-restart">🔄 Börja om</button>
+    </div>
+  </div>
+
+  <div class="teams-section">
+    <div class="teams-section-title">Nuvarande lagindelning</div>
+    <div class="team-pills" id="current-teams"></div>
+  </div>
+</div>
+
+<script>
+// All 32 VM 2026 teams (USA, Canada, Mexico as hosts)
+const ALL_TEAMS = [
+  // Group A–H (32 lag)
+  { name:"Argentina",   flag:"🇦🇷", color:"#5ba4d4", accent:"#ffffff", stats:{PAC:82,SHO:86,PAS:88}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Australien",  flag:"🇦🇺", color:"#00843d", accent:"#ffcd00", stats:{PAC:79,SHO:75,PAS:76}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Belgien",     flag:"🇧🇪", color:"#000000", accent:"#f5c518", stats:{PAC:81,SHO:83,PAS:83}, formation:"3-4-3",   rows:[["GK"],["CB","CB","CB"],["RW","CM","CM","LW"],["RW","ST","LW"]] },
+  { name:"Brasilien",   flag:"🇧🇷", color:"#1e8c2f", accent:"#f5c518", stats:{PAC:88,SHO:85,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Danmark",     flag:"🇩🇰", color:"#c60c30", accent:"#ffffff", stats:{PAC:80,SHO:79,PAS:80}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Ecuador",     flag:"🇪🇨", color:"#003893", accent:"#f5c518", stats:{PAC:78,SHO:76,PAS:75}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
+  { name:"England",     flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", color:"#cf101a", accent:"#ffffff", stats:{PAC:84,SHO:83,PAS:82}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Frankrike",   flag:"🇫🇷", color:"#002fa7", accent:"#ed2939", stats:{PAC:86,SHO:87,PAS:85}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RAM","CAM","LAM"],["ST"]] },
+  { name:"Ghana",       flag:"🇬🇭", color:"#006b3f", accent:"#fcd116", stats:{PAC:80,SHO:77,PAS:74}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Irland",      flag:"🇮🇪", color:"#169b62", accent:"#ff883e", stats:{PAC:77,SHO:72,PAS:73}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
+  { name:"Iran",        flag:"🇮🇷", color:"#239f40", accent:"#ffffff", stats:{PAC:77,SHO:74,PAS:73}, formation:"4-1-4-1", rows:[["GK"],["RB","CB","CB","LB"],["DM"],["RM","CM","CM","LM"],["ST"]] },
+  { name:"Japan",       flag:"🇯🇵", color:"#bc002d", accent:"#ffffff", stats:{PAC:80,SHO:77,PAS:79}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Kanada",      flag:"🇨🇦", color:"#ff0000", accent:"#ffffff", stats:{PAC:80,SHO:78,PAS:78}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Kamerun",     flag:"🇨🇲", color:"#007a5e", accent:"#ce1126", stats:{PAC:82,SHO:78,PAS:74}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Kroatien",    flag:"🇭🇷", color:"#ff0000", accent:"#ffffff", stats:{PAC:79,SHO:80,PAS:85}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Marocko",     flag:"🇲🇦", color:"#c1272d", accent:"#006233", stats:{PAC:81,SHO:78,PAS:79}, formation:"4-1-4-1", rows:[["GK"],["RB","CB","CB","LB"],["DM"],["RM","CM","CM","LM"],["ST"]] },
+  { name:"Mexico",      flag:"🇲🇽", color:"#006847", accent:"#ce1126", stats:{PAC:80,SHO:78,PAS:79}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Nederländerna",flag:"🇳🇱", color:"#ff6900", accent:"#ffffff", stats:{PAC:83,SHO:82,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Nigeria",     flag:"🇳🇬", color:"#008751", accent:"#ffffff", stats:{PAC:83,SHO:79,PAS:76}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Polen",       flag:"🇵🇱", color:"#dc143c", accent:"#ffffff", stats:{PAC:78,SHO:79,PAS:77}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Portugal",    flag:"🇵🇹", color:"#006600", accent:"#ff4444", stats:{PAC:85,SHO:88,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Qatar",       flag:"🇶🇦", color:"#8d153a", accent:"#ffffff", stats:{PAC:74,SHO:71,PAS:72}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Saudiarabien",flag:"🇸🇦", color:"#006c35", accent:"#ffffff", stats:{PAC:76,SHO:73,PAS:73}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Schweiz",     flag:"🇨🇭", color:"#ff0000", accent:"#ffffff", stats:{PAC:80,SHO:79,PAS:80}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Senegal",     flag:"🇸🇳", color:"#00853f", accent:"#fcd116", stats:{PAC:82,SHO:79,PAS:77}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Serbien",     flag:"🇷🇸", color:"#c6363c", accent:"#0c4076", stats:{PAC:79,SHO:81,PAS:79}, formation:"3-4-3",   rows:[["GK"],["CB","CB","CB"],["RM","CM","CM","LM"],["RW","ST","LW"]] },
+  { name:"Spanien",     flag:"🇪🇸", color:"#aa151b", accent:"#f1bf00", stats:{PAC:83,SHO:84,PAS:89}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Sverige",     flag:"🇸🇪", color:"#006aa7", accent:"#fecc02", stats:{PAC:80,SHO:79,PAS:81}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
+  { name:"Sydkorea",    flag:"🇰🇷", color:"#003478", accent:"#cd2e3a", stats:{PAC:80,SHO:77,PAS:78}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Tunisia",     flag:"🇹🇳", color:"#e70013", accent:"#ffffff", stats:{PAC:78,SHO:74,PAS:73}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Tyskland",    flag:"🇩🇪", color:"#222222", accent:"#ffcc00", stats:{PAC:83,SHO:82,PAS:86}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"USA",         flag:"🇺🇸", color:"#002868", accent:"#bf0a30", stats:{PAC:81,SHO:79,PAS:78}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Uruguay",     flag:"🇺🇾", color:"#5aaad6", accent:"#ffffff", stats:{PAC:79,SHO:81,PAS:79}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+];
+
+let state = {
+  selectedTeams: new Set(),
+  activeTeams: [],   // the chosen subset
+  assignments: {},
+  currentName: "",
+  currentTeam: null,
+  stream: null,
+};
+
+function load() { try { const d = JSON.parse(localStorage.getItem("vm26c")||"{}"); state.assignments = d.assignments||{}; if(d.activeTeams) state.activeTeams = ALL_TEAMS.filter(t=>d.activeTeams.includes(t.name)); if(d.selectedTeams) state.selectedTeams = new Set(d.selectedTeams); } catch(e){} }
+function save() { try { localStorage.setItem("vm26c", JSON.stringify({ assignments: state.assignments, activeTeams: state.activeTeams.map(t=>t.name), selectedTeams: [...state.selectedTeams] })); } catch(e){} }
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ── TEAM GRID ──
+function buildTeamGrid() {
+  const grid = document.getElementById("team-grid");
+  grid.innerHTML = ALL_TEAMS.map(t => `
+    <div class="team-toggle ${state.selectedTeams.has(t.name) ? 'selected' : ''}" data-team="${t.name}" onclick="toggleTeam('${t.name}')">
+      <div class="team-toggle-flag">${t.flag}</div>
+      <div class="team-toggle-name">${t.name}</div>
+      <div class="team-toggle-check">${state.selectedTeams.has(t.name) ? '✓' : ''}</div>
+    </div>
+  `).join("");
+  updateSelectionCount();
+}
+
+function toggleTeam(name) {
+  if (state.selectedTeams.has(name)) {
+    state.selectedTeams.delete(name);
+  } else {
+    state.selectedTeams.add(name);
+  }
+  buildTeamGrid();
+}
+
+let allSelected = false;
+document.getElementById("btn-select-all").addEventListener("click", () => {
+  allSelected = !allSelected;
+  if (allSelected) {
+    ALL_TEAMS.forEach(t => state.selectedTeams.add(t.name));
+    document.getElementById("btn-select-all").textContent = "Avmarkera alla";
+  } else {
+    state.selectedTeams.clear();
+    document.getElementById("btn-select-all").textContent = "Välj alla";
+  }
+  buildTeamGrid();
+});
+
+function updateSelectionCount() {
+  document.getElementById("sel-count").textContent = state.selectedTeams.size;
+}
+
+document.getElementById("btn-confirm-teams").addEventListener("click", () => {
+  if (state.selectedTeams.size < 2) {
+    alert("Välj minst 2 lag för att fortsätta!");
+    return;
+  }
+  state.activeTeams = ALL_TEAMS.filter(t => state.selectedTeams.has(t.name));
+  // Clear assignments that belong to removed teams
+  Object.keys(state.assignments).forEach(name => {
+    if (!state.selectedTeams.has(state.assignments[name].team)) {
+      delete state.assignments[name];
+    }
+  });
+  save();
+  renderTeamList();
+  showScreen("screen-name");
+});
+
+document.getElementById("btn-back-to-teams").addEventListener("click", () => {
+  showScreen("screen-teams");
+});
+
+// ── TEAM PICKING ──
+function pickTeam() {
+  const counts = {};
+  state.activeTeams.forEach(t => counts[t.name] = 0);
+  Object.values(state.assignments).forEach(a => { if (counts[a.team] !== undefined) counts[a.team]++; });
+  const min = Math.min(...Object.values(counts));
+  const eligible = state.activeTeams.filter(t => counts[t.name] === min);
+  return eligible[Math.floor(Math.random() * eligible.length)];
+}
+
+// ── PLAYER CARD ──
+function renderPlayerCard(team, playerName, avatarUrl) {
+  document.getElementById("card-top").style.background = team.color;
+  const img = document.getElementById("card-photo");
+  const placeholder = document.getElementById("card-placeholder");
+  if (avatarUrl) {
+    img.src = avatarUrl; img.style.display = "block"; placeholder.style.display = "none";
+  } else {
+    img.style.display = "none"; placeholder.textContent = team.flag;
+    placeholder.style.display = "flex"; placeholder.style.fontSize = "6rem";
+  }
+  document.getElementById("card-flag").textContent = team.flag;
+  document.getElementById("card-pname").textContent = playerName.toUpperCase();
+  document.getElementById("card-tname").textContent = team.name + " · " + team.formation;
+  const num = Object.values(state.assignments).filter(a => a.team === team.name).length;
+  document.getElementById("card-number").textContent = num;
+  const bar = document.getElementById("card-bottom-bar");
+  const s = team.stats;
+  bar.style.background = team.color;
+  bar.innerHTML = `
+    <div class="card-stat"><div class="card-stat-val" style="color:${team.accent}">${s.PAC}</div><div class="card-stat-lbl">PAC</div></div>
+    <div class="card-divider"></div>
+    <div class="card-stat"><div class="card-stat-val" style="color:${team.accent}">${s.SHO}</div><div class="card-stat-lbl">SHO</div></div>
+    <div class="card-divider"></div>
+    <div class="card-stat"><div class="card-stat-val" style="color:${team.accent}">${s.PAS}</div><div class="card-stat-lbl">PAS</div></div>
+    <div class="card-divider"></div>
+    <div class="card-stat"><div class="card-stat-val" style="color:${team.accent}">${team.formation}</div><div class="card-stat-lbl">Formation</div></div>
+  `;
+}
+
+// ── FORMATION ──
+function renderFormation(team, newPlayerName) {
+  const container = document.getElementById("formation-display");
+  const players = Object.entries(state.assignments)
+    .filter(([,a]) => a.team === team.name)
+    .map(([name, a]) => ({ name, avatar: a.avatar }));
+  let html = ""; let idx = 0;
+  team.rows.forEach(row => {
+    html += `<div class="formation-row">`;
+    row.forEach(pos => {
+      const p = players[idx];
+      const isNew = p && p.name === newPlayerName;
+      const hasAvatar = p && p.avatar;
+      html += `<div class="player-slot">
+        <div class="player-circle ${hasAvatar?"has-avatar":""} ${isNew?"is-new":""}">
+          ${hasAvatar ? `<img src="${p.avatar}" alt="${p.name}" />` : `<span style="font-size:0.55rem;color:rgba(255,255,255,0.3)">${pos}</span>`}
+        </div>
+        <div class="player-label ${isNew?"is-new":""}">${p?p.name:""}</div>
+        ${!p?`<div class="pos-lbl">${pos}</div>`:""}
+      </div>`;
+      idx++;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderTeamList() {
+  const counts = {};
+  state.activeTeams.forEach(t => counts[t.name] = 0);
+  Object.values(state.assignments).forEach(a => { if (counts[a.team] !== undefined) counts[a.team]++; });
+  const html = state.activeTeams.filter(t => counts[t.name] > 0)
+    .map(t => `<div class="team-pill">${t.flag} ${t.name} <strong>(${counts[t.name]})</strong></div>`)
+    .join("");
+  document.getElementById("current-teams").innerHTML =
+    html || `<div style="color:rgba(255,255,255,0.3);font-size:0.76rem">Ingen lottad ännu</div>`;
+}
+
+function spawnConfetti() {
+  const colors = ["#f5c518","#fff","#2d8c44","#e63946","#4cc9f0","#f9a8d4"];
+  for (let i=0;i<70;i++) {
+    const el = document.createElement("div");
+    el.className="confetti-piece";
+    el.style.left=Math.random()*100+"vw";
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDuration=(1.5+Math.random()*2.5)+"s";
+    el.style.animationDelay=(Math.random()*0.5)+"s";
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),4000);
+  }
+}
+
+function doAssign(name, team, avatarUrl) {
+  state.assignments[name] = { team: team.name, avatar: avatarUrl||null };
+  save();
+  renderTeamList();
+  renderPlayerCard(team, name, avatarUrl);
+  renderFormation(team, name);
+  showScreen("screen-result");
+  spawnConfetti();
+}
+
+function startSpin(name, team, avatarUrl) {
+  document.getElementById("spin-label").textContent = name + "!";
+  showScreen("screen-spin");
+  setTimeout(() => doAssign(name, team, avatarUrl), 1600);
+}
+
+// ── CAMERA ──
+async function startCamera() {
+  try {
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:"user", width:{ideal:480}, height:{ideal:480} }, audio:false
+    });
+    document.getElementById("video").srcObject = state.stream;
+  } catch(e) {
+    alert("Kunde inte komma åt kameran. Prova alternativet utan selfie.");
+    showScreen("screen-name");
+  }
+}
+function stopCamera() {
+  if (state.stream) { state.stream.getTracks().forEach(t=>t.stop()); state.stream=null; }
+}
+function captureSnapshot() {
+  const video = document.getElementById("video");
+  const W=video.videoWidth||480, H=video.videoHeight||480;
+  const c=document.createElement("canvas"); c.width=W; c.height=H;
+  const ctx=c.getContext("2d");
+  ctx.translate(W,0); ctx.scale(-1,1);
+  ctx.drawImage(video,0,0,W,H);
+  return c.toDataURL("image/jpeg",0.82);
+}
+
+// ── EVENTS ──
+function handleNameSubmit(withCamera) {
+  const name = document.getElementById("name-input").value.trim();
+  if (!name) { document.getElementById("name-input").focus(); return; }
+  state.currentName = name;
+
+  if (state.assignments[name]) {
+    const a = state.assignments[name];
+    const team = state.activeTeams.find(t=>t.name===a.team) || state.activeTeams[0];
+    renderPlayerCard(team, name, a.avatar);
+    renderFormation(team, name);
+    showScreen("screen-result");
+    return;
+  }
+
+  state.currentTeam = pickTeam();
+
+  if (withCamera) {
+    document.getElementById("cam-label").textContent =
+      state.currentName + " → " + state.currentTeam.flag + " " + state.currentTeam.name;
+    showScreen("screen-camera");
+    startCamera();
+  } else {
+    startSpin(name, state.currentTeam, null);
+  }
+}
+
+document.getElementById("btn-to-camera").addEventListener("click", ()=>handleNameSubmit(true));
+document.getElementById("btn-skip-camera").addEventListener("click", ()=>handleNameSubmit(false));
+document.getElementById("name-input").addEventListener("keydown", e=>{if(e.key==="Enter")handleNameSubmit(true);});
+
+document.getElementById("btn-snap").addEventListener("click", ()=>{
+  const avatar = captureSnapshot();
+  stopCamera();
+  startSpin(state.currentName, state.currentTeam, avatar);
+});
+document.getElementById("btn-cam-back").addEventListener("click", ()=>{ stopCamera(); showScreen("screen-name"); });
+
+document.getElementById("btn-new-player").addEventListener("click", ()=>{
+  document.getElementById("name-input").value="";
+  renderTeamList(); showScreen("screen-name");
+});
+document.getElementById("btn-restart").addEventListener("click", ()=>{
+  if (confirm("Rensa alla spelare och börja om?")) {
+    state.assignments={}; save();
+    document.getElementById("name-input").value="";
+    renderTeamList(); showScreen("screen-name");
+  }
+});
+
+// ── INIT ──
+load();
+buildTeamGrid();
+renderTeamList();
+// If teams already chosen, go straight to name screen
+if (state.activeTeams.length >= 2) showScreen("screen-name");
+</script>
+</body>
+</html>
