@@ -401,42 +401,46 @@ html, body {
 </div>
 
 <script>
-// All 32 VM 2026 teams (USA, Canada, Mexico as hosts)
+// Flag images from flagcdn.com — 2-letter ISO codes
+function flagImg(code, size=32) {
+  return `<img src="https://flagcdn.com/${size}x${Math.round(size*0.75)}/${code}.png" style="width:${size}px;height:${Math.round(size*0.75)}px;object-fit:cover;border-radius:2px;vertical-align:middle" alt="" />`;
+}
+
+// All 32 VM 2026 teams — fc = ISO 3166-1 alpha-2 country code for flagcdn
 const ALL_TEAMS = [
-  // Group A–H (32 lag)
-  { name:"Argentina",   flag:"🇦🇷", color:"#5ba4d4", accent:"#ffffff", stats:{PAC:82,SHO:86,PAS:88}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Australien",  flag:"🇦🇺", color:"#00843d", accent:"#ffcd00", stats:{PAC:79,SHO:75,PAS:76}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Belgien",     flag:"🇧🇪", color:"#000000", accent:"#f5c518", stats:{PAC:81,SHO:83,PAS:83}, formation:"3-4-3",   rows:[["GK"],["CB","CB","CB"],["RW","CM","CM","LW"],["RW","ST","LW"]] },
-  { name:"Brasilien",   flag:"🇧🇷", color:"#1e8c2f", accent:"#f5c518", stats:{PAC:88,SHO:85,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Danmark",     flag:"🇩🇰", color:"#c60c30", accent:"#ffffff", stats:{PAC:80,SHO:79,PAS:80}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Ecuador",     flag:"🇪🇨", color:"#003893", accent:"#f5c518", stats:{PAC:78,SHO:76,PAS:75}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
-  { name:"England",     flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", color:"#cf101a", accent:"#ffffff", stats:{PAC:84,SHO:83,PAS:82}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Frankrike",   flag:"🇫🇷", color:"#002fa7", accent:"#ed2939", stats:{PAC:86,SHO:87,PAS:85}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RAM","CAM","LAM"],["ST"]] },
-  { name:"Ghana",       flag:"🇬🇭", color:"#006b3f", accent:"#fcd116", stats:{PAC:80,SHO:77,PAS:74}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Irland",      flag:"🇮🇪", color:"#169b62", accent:"#ff883e", stats:{PAC:77,SHO:72,PAS:73}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
-  { name:"Iran",        flag:"🇮🇷", color:"#239f40", accent:"#ffffff", stats:{PAC:77,SHO:74,PAS:73}, formation:"4-1-4-1", rows:[["GK"],["RB","CB","CB","LB"],["DM"],["RM","CM","CM","LM"],["ST"]] },
-  { name:"Japan",       flag:"🇯🇵", color:"#bc002d", accent:"#ffffff", stats:{PAC:80,SHO:77,PAS:79}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Kanada",      flag:"🇨🇦", color:"#ff0000", accent:"#ffffff", stats:{PAC:80,SHO:78,PAS:78}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Kamerun",     flag:"🇨🇲", color:"#007a5e", accent:"#ce1126", stats:{PAC:82,SHO:78,PAS:74}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Kroatien",    flag:"🇭🇷", color:"#ff0000", accent:"#ffffff", stats:{PAC:79,SHO:80,PAS:85}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Marocko",     flag:"🇲🇦", color:"#c1272d", accent:"#006233", stats:{PAC:81,SHO:78,PAS:79}, formation:"4-1-4-1", rows:[["GK"],["RB","CB","CB","LB"],["DM"],["RM","CM","CM","LM"],["ST"]] },
-  { name:"Mexico",      flag:"🇲🇽", color:"#006847", accent:"#ce1126", stats:{PAC:80,SHO:78,PAS:79}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Nederländerna",flag:"🇳🇱", color:"#ff6900", accent:"#ffffff", stats:{PAC:83,SHO:82,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Nigeria",     flag:"🇳🇬", color:"#008751", accent:"#ffffff", stats:{PAC:83,SHO:79,PAS:76}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Polen",       flag:"🇵🇱", color:"#dc143c", accent:"#ffffff", stats:{PAC:78,SHO:79,PAS:77}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Portugal",    flag:"🇵🇹", color:"#006600", accent:"#ff4444", stats:{PAC:85,SHO:88,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Qatar",       flag:"🇶🇦", color:"#8d153a", accent:"#ffffff", stats:{PAC:74,SHO:71,PAS:72}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Saudiarabien",flag:"🇸🇦", color:"#006c35", accent:"#ffffff", stats:{PAC:76,SHO:73,PAS:73}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Schweiz",     flag:"🇨🇭", color:"#ff0000", accent:"#ffffff", stats:{PAC:80,SHO:79,PAS:80}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Senegal",     flag:"🇸🇳", color:"#00853f", accent:"#fcd116", stats:{PAC:82,SHO:79,PAS:77}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Serbien",     flag:"🇷🇸", color:"#c6363c", accent:"#0c4076", stats:{PAC:79,SHO:81,PAS:79}, formation:"3-4-3",   rows:[["GK"],["CB","CB","CB"],["RM","CM","CM","LM"],["RW","ST","LW"]] },
-  { name:"Spanien",     flag:"🇪🇸", color:"#aa151b", accent:"#f1bf00", stats:{PAC:83,SHO:84,PAS:89}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Sverige",     flag:"🇸🇪", color:"#006aa7", accent:"#fecc02", stats:{PAC:80,SHO:79,PAS:81}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
-  { name:"Sydkorea",    flag:"🇰🇷", color:"#003478", accent:"#cd2e3a", stats:{PAC:80,SHO:77,PAS:78}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"Tunisia",     flag:"🇹🇳", color:"#e70013", accent:"#ffffff", stats:{PAC:78,SHO:74,PAS:73}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Tyskland",    flag:"🇩🇪", color:"#222222", accent:"#ffcc00", stats:{PAC:83,SHO:82,PAS:86}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
-  { name:"USA",         flag:"🇺🇸", color:"#002868", accent:"#bf0a30", stats:{PAC:81,SHO:79,PAS:78}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
-  { name:"Uruguay",     flag:"🇺🇾", color:"#5aaad6", accent:"#ffffff", stats:{PAC:79,SHO:81,PAS:79}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Argentina",    fc:"ar", flag:"🇦🇷", color:"#5ba4d4", accent:"#ffffff", stats:{PAC:82,SHO:86,PAS:88}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Australien",   fc:"au", flag:"🇦🇺", color:"#00843d", accent:"#ffcd00", stats:{PAC:79,SHO:75,PAS:76}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Belgien",      fc:"be", flag:"🇧🇪", color:"#1a1a1a", accent:"#f5c518", stats:{PAC:81,SHO:83,PAS:83}, formation:"3-4-3",   rows:[["GK"],["CB","CB","CB"],["RW","CM","CM","LW"],["RW","ST","LW"]] },
+  { name:"Brasilien",    fc:"br", flag:"🇧🇷", color:"#1e8c2f", accent:"#f5c518", stats:{PAC:88,SHO:85,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Danmark",      fc:"dk", flag:"🇩🇰", color:"#c60c30", accent:"#ffffff", stats:{PAC:80,SHO:79,PAS:80}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Ecuador",      fc:"ec", flag:"🇪🇨", color:"#003893", accent:"#f5c518", stats:{PAC:78,SHO:76,PAS:75}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
+  { name:"England",      fc:"gb-eng", flag:"🏴", color:"#cf101a", accent:"#ffffff", stats:{PAC:84,SHO:83,PAS:82}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Frankrike",    fc:"fr", flag:"🇫🇷", color:"#002fa7", accent:"#ed2939", stats:{PAC:86,SHO:87,PAS:85}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RAM","CAM","LAM"],["ST"]] },
+  { name:"Ghana",        fc:"gh", flag:"🇬🇭", color:"#006b3f", accent:"#fcd116", stats:{PAC:80,SHO:77,PAS:74}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Irland",       fc:"ie", flag:"🇮🇪", color:"#169b62", accent:"#ff883e", stats:{PAC:77,SHO:72,PAS:73}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
+  { name:"Iran",         fc:"ir", flag:"🇮🇷", color:"#239f40", accent:"#ffffff", stats:{PAC:77,SHO:74,PAS:73}, formation:"4-1-4-1", rows:[["GK"],["RB","CB","CB","LB"],["DM"],["RM","CM","CM","LM"],["ST"]] },
+  { name:"Japan",        fc:"jp", flag:"🇯🇵", color:"#bc002d", accent:"#ffffff", stats:{PAC:80,SHO:77,PAS:79}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Kanada",       fc:"ca", flag:"🇨🇦", color:"#cc0000", accent:"#ffffff", stats:{PAC:80,SHO:78,PAS:78}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Kamerun",      fc:"cm", flag:"🇨🇲", color:"#007a5e", accent:"#ce1126", stats:{PAC:82,SHO:78,PAS:74}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Kroatien",     fc:"hr", flag:"🇭🇷", color:"#cc0000", accent:"#ffffff", stats:{PAC:79,SHO:80,PAS:85}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Marocko",      fc:"ma", flag:"🇲🇦", color:"#c1272d", accent:"#006233", stats:{PAC:81,SHO:78,PAS:79}, formation:"4-1-4-1", rows:[["GK"],["RB","CB","CB","LB"],["DM"],["RM","CM","CM","LM"],["ST"]] },
+  { name:"Mexico",       fc:"mx", flag:"🇲🇽", color:"#006847", accent:"#ce1126", stats:{PAC:80,SHO:78,PAS:79}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Nederländerna",fc:"nl", flag:"🇳🇱", color:"#cc4400", accent:"#ffffff", stats:{PAC:83,SHO:82,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Nigeria",      fc:"ng", flag:"🇳🇬", color:"#008751", accent:"#ffffff", stats:{PAC:83,SHO:79,PAS:76}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Polen",        fc:"pl", flag:"🇵🇱", color:"#dc143c", accent:"#ffffff", stats:{PAC:78,SHO:79,PAS:77}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Portugal",     fc:"pt", flag:"🇵🇹", color:"#006600", accent:"#ff6644", stats:{PAC:85,SHO:88,PAS:83}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Qatar",        fc:"qa", flag:"🇶🇦", color:"#8d153a", accent:"#ffffff", stats:{PAC:74,SHO:71,PAS:72}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Saudiarabien", fc:"sa", flag:"🇸🇦", color:"#006c35", accent:"#ffffff", stats:{PAC:76,SHO:73,PAS:73}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Schweiz",      fc:"ch", flag:"🇨🇭", color:"#cc0000", accent:"#ffffff", stats:{PAC:80,SHO:79,PAS:80}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Senegal",      fc:"sn", flag:"🇸🇳", color:"#00853f", accent:"#fcd116", stats:{PAC:82,SHO:79,PAS:77}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Serbien",      fc:"rs", flag:"🇷🇸", color:"#c6363c", accent:"#0c4076", stats:{PAC:79,SHO:81,PAS:79}, formation:"3-4-3",   rows:[["GK"],["CB","CB","CB"],["RM","CM","CM","LM"],["RW","ST","LW"]] },
+  { name:"Spanien",      fc:"es", flag:"🇪🇸", color:"#aa151b", accent:"#f1bf00", stats:{PAC:83,SHO:84,PAS:89}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Sverige",      fc:"se", flag:"🇸🇪", color:"#006aa7", accent:"#fecc02", stats:{PAC:80,SHO:79,PAS:81}, formation:"4-4-2",   rows:[["GK"],["RB","CB","CB","LB"],["RM","CM","CM","LM"],["ST","ST"]] },
+  { name:"Sydkorea",     fc:"kr", flag:"🇰🇷", color:"#003478", accent:"#cd2e3a", stats:{PAC:80,SHO:77,PAS:78}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"Tunisia",      fc:"tn", flag:"🇹🇳", color:"#e70013", accent:"#ffffff", stats:{PAC:78,SHO:74,PAS:73}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Tyskland",     fc:"de", flag:"🇩🇪", color:"#222222", accent:"#ffcc00", stats:{PAC:83,SHO:82,PAS:86}, formation:"4-2-3-1", rows:[["GK"],["RB","CB","CB","LB"],["DM","DM"],["RM","CAM","LM"],["ST"]] },
+  { name:"USA",          fc:"us", flag:"🇺🇸", color:"#002868", accent:"#bf0a30", stats:{PAC:81,SHO:79,PAS:78}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
+  { name:"Uruguay",      fc:"uy", flag:"🇺🇾", color:"#5aaad6", accent:"#ffffff", stats:{PAC:79,SHO:81,PAS:79}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
 ];
 
 let state = {
@@ -461,7 +465,7 @@ function buildTeamGrid() {
   const grid = document.getElementById("team-grid");
   grid.innerHTML = ALL_TEAMS.map(t => `
     <div class="team-toggle ${state.selectedTeams.has(t.name) ? 'selected' : ''}" data-team="${t.name}" onclick="toggleTeam('${t.name}')">
-      <div class="team-toggle-flag">${t.flag}</div>
+      <div class="team-toggle-flag">${flagImg(t.fc, 36)}</div>
       <div class="team-toggle-name">${t.name}</div>
       <div class="team-toggle-check">${state.selectedTeams.has(t.name) ? '✓' : ''}</div>
     </div>
@@ -534,10 +538,11 @@ function renderPlayerCard(team, playerName, avatarUrl) {
   if (avatarUrl) {
     img.src = avatarUrl; img.style.display = "block"; placeholder.style.display = "none";
   } else {
-    img.style.display = "none"; placeholder.textContent = team.flag;
+    img.style.display = "none";
+    placeholder.innerHTML = flagImg(team.fc, 120);
     placeholder.style.display = "flex"; placeholder.style.fontSize = "6rem";
   }
-  document.getElementById("card-flag").textContent = team.flag;
+  document.getElementById("card-flag").innerHTML = flagImg(team.fc, 48);
   document.getElementById("card-pname").textContent = playerName.toUpperCase();
   document.getElementById("card-tname").textContent = team.name + " · " + team.formation;
   const num = Object.values(state.assignments).filter(a => a.team === team.name).length;
@@ -588,7 +593,7 @@ function renderTeamList() {
   state.activeTeams.forEach(t => counts[t.name] = 0);
   Object.values(state.assignments).forEach(a => { if (counts[a.team] !== undefined) counts[a.team]++; });
   const html = state.activeTeams.filter(t => counts[t.name] > 0)
-    .map(t => `<div class="team-pill">${t.flag} ${t.name} <strong>(${counts[t.name]})</strong></div>`)
+    .map(t => `<div class="team-pill">${flagImg(t.fc, 20)} ${t.name} <strong>(${counts[t.name]})</strong></div>`)
     .join("");
   document.getElementById("current-teams").innerHTML =
     html || `<div style="color:rgba(255,255,255,0.3);font-size:0.76rem">Ingen lottad ännu</div>`;
