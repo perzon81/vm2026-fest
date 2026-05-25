@@ -667,23 +667,33 @@ function announceTeam(playerName, teamName) {
   window.speechSynthesis.cancel();
 
   const phrases = [
-    `${playerName}... du spelar för... ${teamName}!`,
-    `${playerName}! Välkommen till ${teamName}!`,
-    `Och ${playerName} hamnar i... ${teamName}!`,
+    `${playerName}... you are playing for... ${teamName}!`,
+    `${playerName}! Welcome to ${teamName}!`,
+    `And ${playerName} will play for... ${teamName}!`,
+    `The crowd goes wild! ${playerName} joins ${teamName}!`,
   ];
   const text = phrases[Math.floor(Math.random() * phrases.length)];
 
   const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "sv-SE";
-  utter.rate = 0.88;
-  utter.pitch = 1.1;
+  utter.lang = "en-GB";
+  utter.rate = 0.82;
+  utter.pitch = 0.9;
   utter.volume = 1;
 
-  // Try to pick a good Swedish or deep voice
-  const voices = window.speechSynthesis.getVoices();
-  const svVoice = voices.find(v => v.lang === "sv-SE");
-  const deepVoice = voices.find(v => /male|man|daniel|jorge|thomas/i.test(v.name));
-  utter.voice = svVoice || deepVoice || voices[0] || null;
+  // Wait for voices to load, then pick a deep English male voice
+  const pickVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => /daniel|arthur|oliver|george|aaron/i.test(v.name));
+    const enGB = voices.find(v => v.lang === "en-GB");
+    const enUS = voices.find(v => v.lang === "en-US");
+    utter.voice = preferred || enGB || enUS || voices[0] || null;
+  };
+
+  if (window.speechSynthesis.getVoices().length > 0) {
+    pickVoice();
+  } else {
+    window.speechSynthesis.onvoiceschanged = pickVoice;
+  }
 
   // Small delay so confetti and card animation start first
   setTimeout(() => window.speechSynthesis.speak(utter), 400);
