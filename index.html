@@ -314,6 +314,112 @@ html, body {
 /* CONFETTI */
 .confetti-piece { position:fixed;pointer-events:none;z-index:999;width:8px;height:8px;border-radius:2px;animation:cfFall linear forwards; }
 @keyframes cfFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* ── OVERVIEW BUTTON ── */
+.btn-overview {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 50;
+  padding: 0.75rem 1.25rem;
+  background: rgba(0,0,0,0.75);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 40px; color: white;
+  font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-overview:hover { background: rgba(218,41,28,0.8); transform: translateY(-2px); }
+
+/* ── OVERVIEW OVERLAY ── */
+#overview-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(10,20,12,0.97);
+  backdrop-filter: blur(16px);
+  display: none; flex-direction: column;
+  opacity: 0; transition: opacity 0.25s;
+}
+#overview-overlay.open { display: flex; }
+#overview-overlay.visible { opacity: 1; }
+
+.overview-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+.overview-title {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.6rem; letter-spacing: 0.08em; color: white;
+}
+.overview-close {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.1); border: none;
+  color: white; font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.overview-close:hover { background: rgba(218,41,28,0.7); }
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.overview-team-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; overflow: hidden;
+  animation: fadeSlideIn 0.3s ease both;
+}
+@keyframes fadeSlideIn {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.overview-team-header {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.overview-team-flag img { border-radius: 3px; }
+.overview-team-name {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.1rem; letter-spacing: 0.06em; color: white; flex: 1;
+}
+.overview-team-count {
+  font-size: 0.7rem; color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.08);
+  padding: 2px 7px; border-radius: 10px;
+}
+
+.overview-players {
+  padding: 0.6rem 0.75rem;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.overview-player {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.overview-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  overflow: hidden; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+}
+.overview-avatar img { width:100%;height:100%;object-fit:cover;transform:scaleX(-1); }
+.overview-avatar-placeholder { font-size: 0.8rem; }
+.overview-player-name {
+  font-size: 0.82rem; color: rgba(255,255,255,0.85);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.overview-empty {
+  font-size: 0.72rem; color: rgba(255,255,255,0.25);
+  font-style: italic; padding: 0.25rem 0;
+}
+
 </style>
 </head>
 <body>
@@ -433,6 +539,24 @@ html, body {
     <div class="teams-section-title">Nuvarande lagindelning</div>
     <div class="team-pills" id="current-teams"></div>
   </div>
+
+  <!-- Floating overview button -->
+  <button class="btn-overview" id="btn-overview" onclick="openOverview()">
+    📊 Visa översikt
+  </button>
+</div>
+
+<!-- OVERVIEW OVERLAY -->
+<div id="overview-overlay">
+  <div class="overview-header">
+    <div class="overview-title">
+      <span style="color:#DA291C;font-weight:700;letter-spacing:0.15em">WSP</span>
+      <span style="color:rgba(255,255,255,0.5);margin:0 0.5rem">·</span>
+      <span>Team Overview</span>
+    </div>
+    <button class="overview-close" onclick="closeOverview()">✕</button>
+  </div>
+  <div class="overview-grid" id="overview-grid"></div>
 </div>
 
 <script>
@@ -790,6 +914,61 @@ document.getElementById("btn-restart").addEventListener("click", ()=>{
     renderTeamList(); showScreen("screen-name");
   }
 });
+
+
+// ── OVERVIEW ──
+function openOverview() {
+  renderOverview();
+  const overlay = document.getElementById("overview-overlay");
+  overlay.classList.add("open");
+  requestAnimationFrame(() => overlay.classList.add("visible"));
+}
+
+function closeOverview() {
+  const overlay = document.getElementById("overview-overlay");
+  overlay.classList.remove("visible");
+  setTimeout(() => overlay.classList.remove("open"), 250);
+}
+
+function renderOverview() {
+  const grid = document.getElementById("overview-grid");
+  const teamsWithPlayers = state.activeTeams.map(team => {
+    const players = Object.entries(state.assignments)
+      .filter(([, a]) => a.team === team.name)
+      .map(([name, a]) => ({ name, avatar: a.avatar }));
+    return { team, players };
+  }).filter(t => t.players.length > 0);
+
+  if (teamsWithPlayers.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.3);padding:3rem;font-size:0.9rem">Ingen har lottats ännu</div>`;
+    return;
+  }
+
+  grid.innerHTML = teamsWithPlayers.map(({ team, players }, i) => `
+    <div class="overview-team-card" style="animation-delay:${i * 0.04}s;border-top:3px solid ${team.color}">
+      <div class="overview-team-header" style="background:${team.color}22">
+        <div class="overview-team-flag">${flagImg(team.fc, 28)}</div>
+        <div class="overview-team-name">${team.name}</div>
+        <div class="overview-team-count">${players.length}</div>
+      </div>
+      <div class="overview-players">
+        ${players.map(p => `
+          <div class="overview-player">
+            <div class="overview-avatar">
+              ${p.avatar
+                ? `<img src="${p.avatar}" alt="${p.name}" />`
+                : `<span class="overview-avatar-placeholder">👤</span>`}
+            </div>
+            <div class="overview-player-name">${p.name}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+// Close overlay on ESC
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeOverview(); });
 
 // ── INIT ──
 load();
