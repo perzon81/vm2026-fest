@@ -337,7 +337,10 @@ html, body {
     </div>
     <button class="btn btn-gold" id="btn-to-camera">📸 TA SELFIE &amp; LOTTA LAG</button>
     <button class="btn btn-ghost" id="btn-skip-camera">🎲 Lotta utan selfie</button>
-    <button class="btn btn-ghost" id="btn-back-to-teams" style="font-size:0.8rem;padding:0.6rem">← Ändra lagval</button>
+    <div style="display:flex;gap:0.5rem;width:100%">
+      <button class="btn btn-ghost" id="btn-back-to-teams" style="font-size:0.8rem;padding:0.6rem;flex:1">← Ändra lagval</button>
+      <button class="btn btn-ghost" id="btn-full-reset" style="font-size:0.8rem;padding:0.6rem;flex:1;color:#f87171;border-color:rgba(248,113,113,0.3)">🗑 Börja helt om</button>
+    </div>
   </div>
 
   <!-- SCREEN 2: Camera -->
@@ -518,6 +521,19 @@ document.getElementById("btn-confirm-teams").addEventListener("click", () => {
 
 document.getElementById("btn-back-to-teams").addEventListener("click", () => {
   showScreen("screen-teams");
+});
+
+document.getElementById("btn-full-reset").addEventListener("click", () => {
+  if (confirm("Rensa allt – spelare OCH lagval – och börja om från början?")) {
+    state.assignments = {};
+    state.activeTeams = [];
+    state.selectedTeams = new Set();
+    localStorage.removeItem("vm26c");
+    document.getElementById("name-input").value = "";
+    renderTeamList();
+    buildTeamGrid();
+    showScreen("screen-teams");
+  }
 });
 
 // ── TEAM PICKING ──
