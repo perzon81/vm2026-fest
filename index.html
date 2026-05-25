@@ -608,6 +608,34 @@ function spawnConfetti() {
   }
 }
 
+// ── VOICE ANNOUNCEMENT ──
+function announceTeam(playerName, teamName) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const phrases = [
+    `${playerName}... du spelar för... ${teamName}!`,
+    `${playerName}! Välkommen till ${teamName}!`,
+    `Och ${playerName} hamnar i... ${teamName}!`,
+  ];
+  const text = phrases[Math.floor(Math.random() * phrases.length)];
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "sv-SE";
+  utter.rate = 0.88;
+  utter.pitch = 1.1;
+  utter.volume = 1;
+
+  // Try to pick a good Swedish or deep voice
+  const voices = window.speechSynthesis.getVoices();
+  const svVoice = voices.find(v => v.lang === "sv-SE");
+  const deepVoice = voices.find(v => /male|man|daniel|jorge|thomas/i.test(v.name));
+  utter.voice = svVoice || deepVoice || voices[0] || null;
+
+  // Small delay so confetti and card animation start first
+  setTimeout(() => window.speechSynthesis.speak(utter), 400);
+}
+
 function doAssign(name, team, avatarUrl) {
   state.assignments[name] = { team: team.name, avatar: avatarUrl||null };
   save();
@@ -616,6 +644,7 @@ function doAssign(name, team, avatarUrl) {
   renderFormation(team, name);
   showScreen("screen-result");
   spawnConfetti();
+  announceTeam(name, team.name);
 }
 
 function startSpin(name, team, avatarUrl) {
