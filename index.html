@@ -419,6 +419,47 @@ html, body {
 }
 
 
+
+/* ── DELETE BUTTON ── */
+.btn-delete-player {
+  margin-left: auto; flex-shrink: 0;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: none; border: none;
+  color: rgba(255,255,255,0.2); font-size: 0.65rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+.btn-delete-player:hover { background: rgba(248,113,113,0.25); color: #f87171; }
+
+/* ── MODALS ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,0.82); backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center;
+}
+.modal-box {
+  background: #1a2e1c; border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px; padding: 1.5rem;
+  width: 90%; max-width: 340px;
+  display: flex; flex-direction: column; gap: 1rem;
+  animation: modalPop 0.25s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+@keyframes modalPop {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.modal-title {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.3rem; letter-spacing: 0.07em; color: white;
+}
+.modal-body { font-size: 0.88rem; color: rgba(255,255,255,0.65); line-height: 1.5; }
+.modal-body strong { color: white; }
+.modal-row { display: flex; gap: 0.6rem; }
+.modal-row .btn { flex: 1; font-size: 0.9rem; padding: 0.75rem; }
+.btn-danger { background: rgba(248,113,113,0.2); border: 1px solid rgba(248,113,113,0.4); color: #f87171; font-family: 'Inter', sans-serif; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+.btn-danger:hover { background: rgba(248,113,113,0.4); }
+
 /* ── PUBLIK-REAKTIONER ── */
 .reaction {
   position: fixed;
@@ -1122,12 +1163,13 @@ function handleNameSubmit(withCamera) {
   if (!name) { document.getElementById("name-input").focus(); return; }
   state.currentName = name;
 
-  if (state.assignments[name]) {
-    const a = state.assignments[name];
+  // Case-insensitive duplicate check
+  const existingKey = Object.keys(state.assignments).find(k => k.toLowerCase() === name.toLowerCase());
+  if (existingKey) {
+    const a = state.assignments[existingKey];
     const team = state.activeTeams.find(t=>t.name===a.team) || state.activeTeams[0];
-    renderPlayerCard(team, name, a.avatar);
-    renderFormation(team, name);
-    showScreen("screen-result");
+    // Show clear warning
+    showDuplicateWarning(existingKey, team);
     return;
   }
 
@@ -1262,6 +1304,7 @@ function renderOverview() {
             </div>
             <div class="overview-player-name">${p.name}</div>
             ${pi === 0 ? `<span class="captain-badge" title="Lagkapten">©</span>` : ""}
+            <button class="btn-delete-player" onclick="event.stopPropagation();confirmDelete('${p.name}','${team.name}')" title="Ta bort">✕</button>
           </div>
         `).join("")}
       </div>
@@ -1329,6 +1372,41 @@ function spawnReactions(teamColor) {
     document.body.appendChild(burst2);
     setTimeout(() => burst2.remove(), 1200);
   }, 700);
+}
+
+
+// ── DUPLICATE WARNING ──
+function showDuplicateWarning(existingName, team) {
+  const modal = document.getElementById("duplicate-modal");
+  document.getElementById("dup-name").textContent = existingName;
+  document.getElementById("dup-team-flag").innerHTML = flagImg(team.fc, 24);
+  document.getElementById("dup-team-name").textContent = team.name;
+  modal.style.display = "flex";
+}
+
+function closeDuplicateModal() {
+  document.getElementById("duplicate-modal").style.display = "none";
+  document.getElementById("name-input").value = "";
+  document.getElementById("name-input").focus();
+}
+
+// ── DELETE PLAYER ──
+function confirmDelete(playerName, teamName) {
+  const modal = document.getElementById("delete-modal");
+  document.getElementById("del-name").textContent = playerName;
+  document.getElementById("del-team").textContent = teamName;
+  document.getElementById("btn-confirm-delete").onclick = () => {
+    delete state.assignments[playerName];
+    save();
+    renderTeamList();
+    renderOverview();
+    closeDeleteModal();
+  };
+  modal.style.display = "flex";
+}
+
+function closeDeleteModal() {
+  document.getElementById("delete-modal").style.display = "none";
 }
 
 // ── COUNTDOWN ──
@@ -1457,5 +1535,37 @@ loadCountdown();
 // If teams already chosen, go straight to name screen
 if (state.activeTeams.length >= 2) { showScreen("screen-name"); applyFinishedState(); }
 </script>
+
+<!-- DUPLICATE WARNING MODAL -->
+<div class="modal-overlay" id="duplicate-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Redan lottad!</div>
+    <div class="modal-body">
+      <strong id="dup-name"></strong> är redan lottad till
+      <span id="dup-team-flag" style="vertical-align:middle"></span>
+      <strong id="dup-team-name"></strong>.
+      <br><br>Varje person kan bara lotta en gång.
+    </div>
+    <div class="modal-row">
+      <button class="btn btn-ghost" onclick="closeDuplicateModal()">OK, förstått</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-box">
+    <div class="modal-title">Ta bort spelare?</div>
+    <div class="modal-body">
+      Vill du ta bort <strong id="del-name"></strong> från <strong id="del-team"></strong>?
+      <br><br>De kan lottas om efteråt.
+    </div>
+    <div class="modal-row">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Avbryt</button>
+      <button class="btn-danger btn" id="btn-confirm-delete">🗑 Ta bort</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
