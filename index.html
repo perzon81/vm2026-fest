@@ -155,7 +155,11 @@ html, body {
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
   user-select: none;
 }
-.team-toggle:hover { background: rgba(255,255,255,0.1); transform: scale(1.03); }
+.team-toggle:hover:not(.disabled) { background: rgba(255,255,255,0.1); transform: scale(1.03); }
+.team-toggle.disabled {
+  opacity: 0.3; cursor: not-allowed; filter: grayscale(0.8);
+  pointer-events: none;
+}
 .team-toggle.selected {
   border-color: var(--gold);
   background: rgba(245,197,24,0.12);
@@ -868,7 +872,7 @@ html, body {
 
     <div class="selection-bar">
       <div class="selection-count"><strong id="sel-count">0</strong> lag valda</div>
-      <button class="btn-select-all" id="btn-select-all">Välj alla</button>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35)">Fördefinierade lag</div>
     </div>
 
     <div class="team-grid" id="team-grid"></div>
@@ -1033,16 +1037,18 @@ const ALL_TEAMS = [
   { name:"Uruguay",      fc:"uy", flag:"🇺🇾", color:"#5aaad6", accent:"#ffffff", stats:{PAC:79,SHO:81,PAS:79}, formation:"4-3-3",   rows:[["GK"],["RB","CB","CB","LB"],["CM","CM","CM"],["RW","ST","LW"]] },
 ];
 
+const PRESET_TEAMS = ["Sverige", "England", "Brasilien", "Argentina", "Italien"];
+
 let state = {
-  selectedTeams: new Set(),
-  activeTeams: [],   // the chosen subset
+  selectedTeams: new Set(PRESET_TEAMS),
+  activeTeams: [],
   assignments: {},
   currentName: "",
   currentTeam: null,
   stream: null,
 };
 
-function load() { try { const d = JSON.parse(localStorage.getItem("vm26c")||"{}"); state.assignments = d.assignments||{}; if(d.activeTeams) state.activeTeams = ALL_TEAMS.filter(t=>d.activeTeams.includes(t.name)); if(d.selectedTeams) state.selectedTeams = new Set(d.selectedTeams); state.finished = d.finished || false; } catch(e){} }
+function load() { try { const d = JSON.parse(localStorage.getItem("vm26c")||"{}"); state.assignments = d.assignments||{}; if(d.activeTeams) state.activeTeams = ALL_TEAMS.filter(t=>d.activeTeams.includes(t.name)); state.selectedTeams = new Set(PRESET_TEAMS); state.finished = d.finished || false; } catch(e){} }
 function save() { try { localStorage.setItem("vm26c", JSON.stringify({ assignments: state.assignments, activeTeams: state.activeTeams.map(t=>t.name), selectedTeams: [...state.selectedTeams] })); } catch(e){} }
 
 function showScreen(id) {
@@ -1053,18 +1059,25 @@ function showScreen(id) {
 // ── TEAM GRID ──
 function buildTeamGrid() {
   const grid = document.getElementById("team-grid");
-  grid.innerHTML = ALL_TEAMS.map(t => `
-    <div class="team-toggle ${state.selectedTeams.has(t.name) ? 'selected' : ''}" data-team="${t.name}" onclick="toggleTeam('${t.name}')">
+  grid.innerHTML = ALL_TEAMS.map(t => {
+    const isPreset = PRESET_TEAMS.includes(t.name);
+    const isSelected = state.selectedTeams.has(t.name);
+    return `
+    <div class="team-toggle ${isSelected ? 'selected' : ''} ${!isPreset ? 'disabled' : ''}"
+         data-team="${t.name}"
+         onclick="${isPreset ? `toggleTeam('${t.name}')` : ''}">
       <div class="team-toggle-flag">${flagImg(t.fc, 36)}</div>
       <div class="team-toggle-name">${t.name}</div>
-      <div class="team-toggle-check">${state.selectedTeams.has(t.name) ? '✓' : ''}</div>
-    </div>
-  `).join("");
+      <div class="team-toggle-check">${isSelected ? '✓' : (isPreset ? '' : '—')}</div>
+    </div>`;
+  }).join("");
   updateSelectionCount();
 }
 
 function toggleTeam(name) {
+  if (!PRESET_TEAMS.includes(name)) return; // only preset teams toggleable
   if (state.selectedTeams.has(name)) {
+    if (state.selectedTeams.size <= 2) return; // min 2 teams
     state.selectedTeams.delete(name);
   } else {
     state.selectedTeams.add(name);
@@ -1072,18 +1085,7 @@ function toggleTeam(name) {
   buildTeamGrid();
 }
 
-let allSelected = false;
-document.getElementById("btn-select-all").addEventListener("click", () => {
-  allSelected = !allSelected;
-  if (allSelected) {
-    ALL_TEAMS.forEach(t => state.selectedTeams.add(t.name));
-    document.getElementById("btn-select-all").textContent = "Avmarkera alla";
-  } else {
-    state.selectedTeams.clear();
-    document.getElementById("btn-select-all").textContent = "Välj alla";
-  }
-  buildTeamGrid();
-});
+// btn-select-all removed — preset teams only
 
 function updateSelectionCount() {
   document.getElementById("sel-count").textContent = state.selectedTeams.size;
