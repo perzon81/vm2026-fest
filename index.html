@@ -1707,17 +1707,10 @@ function checkPin() {
 
 function executeAdminAction() {
   if (pinAction === "reset") {
-    state.assignments = {};
-    state.activeTeams = [];
-    state.selectedTeams = new Set();
-    state.finished = false;
-    lastAssigned = null;
+    // Nuke everything and reload fresh
     localStorage.removeItem("vm26c");
-    document.getElementById("name-input").value = "";
-    renderTeamList();
-    buildTeamGrid();
-    showUndoBtn();
-    showScreen("screen-teams");
+    localStorage.removeItem("vm26_countdown");
+    location.reload();
   } else if (pinAction === "restart") {
     state.assignments = {};
     state.finished = false;
@@ -1726,6 +1719,7 @@ function executeAdminAction() {
     document.getElementById("name-input").value = "";
     renderTeamList();
     showUndoBtn();
+    applyFinishedState();
     showScreen("screen-name");
   }
 }
