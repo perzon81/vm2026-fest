@@ -1772,6 +1772,17 @@ function loadCountdown() {
 function startCountdown(isoTarget, name) {
   if (countdownInterval) clearInterval(countdownInterval);
   document.getElementById("countdown-event-name").textContent = name;
+
+  // Show local start time in 24h format
+  const targetDate = new Date(isoTarget);
+  const timeStr = targetDate.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const dateStr = targetDate.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
+  document.getElementById("countdown-event-name").title = `Startar ${dateStr} kl ${timeStr}`;
+
+  // Update the label to show start time
+  const labelEl = document.querySelector(".countdown-label span");
+  if (labelEl) labelEl.textContent = `startar ${dateStr} ${timeStr} · om`;
+
   countdownInterval = setInterval(() => {
     const diff = new Date(isoTarget) - new Date();
     if (diff <= 0) {
