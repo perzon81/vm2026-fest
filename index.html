@@ -311,6 +311,113 @@ html, body {
 .actions-row { display:flex;gap:0.6rem;width:100%; }
 .actions-row .btn { flex:1; }
 
+
+/* ── COUNTDOWN ── */
+.countdown-wrap {
+  width: 100%; max-width: 560px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 0.9rem 1.2rem;
+  backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.countdown-units {
+  display: flex; gap: 0.75rem; align-items: center;
+}
+.countdown-unit { text-align: center; }
+.countdown-val {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 2rem; line-height: 1; color: var(--gold);
+  min-width: 2.2ch; display: block;
+}
+.countdown-lbl {
+  font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+}
+.countdown-sep {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.8rem; color: rgba(255,255,255,0.2); line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.countdown-label {
+  font-size: 0.72rem; color: rgba(255,255,255,0.45);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  flex-shrink: 0;
+}
+.countdown-label strong { color: white; display: block; font-size: 0.78rem; letter-spacing: 0; text-transform: none; }
+.btn-set-time {
+  background: none; border: none; color: rgba(255,255,255,0.3);
+  font-size: 0.72rem; cursor: pointer; padding: 0; text-decoration: underline;
+  white-space: nowrap;
+}
+.btn-set-time:hover { color: var(--gold); }
+.countdown-done {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.4rem; letter-spacing: 0.06em; color: #4ade80;
+  animation: pulse-green 1.5s ease-in-out infinite;
+}
+@keyframes pulse-green {
+  0%,100% { opacity:1 } 50% { opacity:0.5 }
+}
+
+/* ── PRINT / EXPORT ── */
+.btn-print {
+  padding: 0.65rem 1.1rem;
+  background: rgba(0,0,0,0.75);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 40px; color: white;
+  font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-print:hover { background: rgba(74,222,128,0.3); transform: translateY(-2px); }
+
+/* ── DRAG AND DROP ── */
+.overview-player {
+  cursor: grab; border-radius: 6px;
+  transition: background 0.12s;
+  padding: 2px 4px; margin: 0 -4px;
+}
+.overview-player:hover { background: rgba(255,255,255,0.06); }
+.overview-player.dragging {
+  opacity: 0.4; cursor: grabbing;
+}
+.overview-team-card.drag-over {
+  border-color: var(--gold) !important;
+  background: rgba(245,197,24,0.08);
+}
+
+/* ── PRINT STYLES ── */
+@media print {
+  body { background: white !important; color: black !important; }
+  .pitch-bg, .pitch-overlay, .float-btns, .app, #overview-overlay .overview-header button { display: none !important; }
+  #overview-overlay {
+    position: static !important; background: white !important;
+    display: block !important; opacity: 1 !important;
+  }
+  .overview-header { border-bottom: 2px solid #DA291C; padding: 1rem; }
+  .overview-title { color: black !important; }
+  .overview-title span:first-child { color: #DA291C !important; }
+  .overview-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.75rem; padding: 1rem;
+    overflow: visible !important;
+  }
+  .overview-team-card {
+    background: #f8f8f8 !important; border: 1px solid #ddd !important;
+    border-radius: 8px; break-inside: avoid;
+    animation: none !important;
+  }
+  .overview-team-header { background: #eee !important; }
+  .overview-team-name, .overview-player-name { color: black !important; }
+  .overview-team-count { color: #555 !important; background: #ddd !important; }
+  .captain-badge { color: #c4930d !important; border-color: #c4930d !important; background: #fff8e1 !important; }
+  .overview-avatar { border-color: #ccc !important; }
+  .overview-avatar-placeholder { color: #999 !important; }
+}
+
 /* CONFETTI */
 .confetti-piece { position:fixed;pointer-events:none;z-index:999;width:8px;height:8px;border-radius:2px;animation:cfFall linear forwards; }
 @keyframes cfFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
@@ -485,6 +592,51 @@ html, body {
     </div>
   </div>
 
+
+  <!-- COUNTDOWN -->
+  <div class="countdown-wrap" id="countdown-wrap">
+    <div>
+      <div class="countdown-label">
+        <strong id="countdown-event-name">WSP Sommarfest</strong>
+        <span>startar om</span>
+      </div>
+      <button class="btn-set-time" onclick="openSetTime()">Ändra tid</button>
+    </div>
+    <div class="countdown-units" id="countdown-units">
+      <div class="countdown-unit">
+        <span class="countdown-val" id="cd-h">--</span>
+        <span class="countdown-lbl">tim</span>
+      </div>
+      <div class="countdown-sep">:</div>
+      <div class="countdown-unit">
+        <span class="countdown-val" id="cd-m">--</span>
+        <span class="countdown-lbl">min</span>
+      </div>
+      <div class="countdown-sep">:</div>
+      <div class="countdown-unit">
+        <span class="countdown-val" id="cd-s">--</span>
+        <span class="countdown-lbl">sek</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SET TIME MODAL -->
+  <div id="set-time-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);align-items:center;justify-content:center">
+    <div style="background:#1a2e1c;border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:1.5rem;width:90%;max-width:360px;display:flex;flex-direction:column;gap:1rem">
+      <div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:1.4rem;letter-spacing:0.07em">Ställ in festtid</div>
+      <div>
+        <div class="label-text">Eventnamn</div>
+        <input class="name-input" id="input-event-name" type="text" value="WSP Sommarfest" maxlength="30" />
+      </div>
+      <div>
+        <div class="label-text">Datum &amp; tid</div>
+        <input class="name-input" id="input-event-time" type="datetime-local" />
+      </div>
+      <button class="btn btn-gold" onclick="saveSetTime()">SPARA</button>
+      <button class="btn btn-ghost" onclick="closeSetTime()" style="font-size:0.85rem;padding:0.65rem">Avbryt</button>
+    </div>
+  </div>
+
   <!-- SCREEN 0: Team picker -->
   <div class="card screen active" id="screen-teams">
     <div class="steps">
@@ -591,6 +743,7 @@ html, body {
   <!-- Floating buttons -->
   <div class="float-btns">
     <button class="btn-overview" id="btn-overview" onclick="openOverview()">📊 Översikt</button>
+    <button class="btn-print" id="btn-print-float" onclick="openOverview();setTimeout(printOverview,300)">🖨 Skriv ut</button>
     <button class="btn-finish" id="btn-finish" onclick="finishLottery()">🔒 Avsluta lottning</button>
   </div>
 </div>
@@ -603,7 +756,7 @@ html, body {
       <span style="color:rgba(255,255,255,0.5);margin:0 0.5rem">·</span>
       <span>Team Overview</span>
     </div>
-    <button class="overview-close" onclick="closeOverview()">✕</button>
+    <div style="display:flex;gap:0.5rem;align-items:center"><button class="btn-print" onclick="printOverview()">🖨 Skriv ut</button><button class="overview-close" onclick="closeOverview()">✕</button></div>
   </div>
   <div class="overview-grid" id="overview-grid"></div>
 </div>
@@ -1052,15 +1205,15 @@ function renderOverview() {
   }
 
   grid.innerHTML = teamsWithPlayers.map(({ team, players }, i) => `
-    <div class="overview-team-card" style="animation-delay:${i * 0.04}s;border-top:3px solid ${team.color}">
+    <div class="overview-team-card" data-team="${team.name}" style="animation-delay:${i * 0.04}s;border-top:3px solid ${team.color}">
       <div class="overview-team-header" style="background:${team.color}22">
         <div class="overview-team-flag">${flagImg(team.fc, 28)}</div>
         <div class="overview-team-name">${team.name}</div>
         <div class="overview-team-count">${players.length}</div>
       </div>
-      <div class="overview-players">
+      <div class="overview-players" id="players-${team.name.replace(/\s/g,'_')}">
         ${players.map((p, pi) => `
-          <div class="overview-player">
+          <div class="overview-player" data-player="${p.name}" data-from="${team.name}">
             <div class="overview-avatar">
               ${p.avatar
                 ? `<img src="${p.avatar}" alt="${p.name}" />`
@@ -1073,15 +1226,142 @@ function renderOverview() {
       </div>
     </div>
   `).join("");
+  // Attach drag listeners after render
+  setTimeout(() => {
+    document.querySelectorAll(".overview-player[data-player]").forEach(el => {
+      makeDraggable(el, el.dataset.player, el.dataset.from);
+    });
+    setupDropZones();
+  }, 0);
 }
 
 // Close overlay on ESC
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeOverview(); });
 
+
+// ── COUNTDOWN ──
+let countdownInterval = null;
+
+function loadCountdown() {
+  try {
+    const d = JSON.parse(localStorage.getItem("vm26_countdown") || "{}");
+    if (d.target) startCountdown(d.target, d.name || "WSP Sommarfest");
+  } catch(e) {}
+}
+
+function startCountdown(isoTarget, name) {
+  if (countdownInterval) clearInterval(countdownInterval);
+  document.getElementById("countdown-event-name").textContent = name;
+  countdownInterval = setInterval(() => {
+    const diff = new Date(isoTarget) - new Date();
+    if (diff <= 0) {
+      clearInterval(countdownInterval);
+      document.getElementById("countdown-units").innerHTML =
+        '<span class="countdown-done">🎉 Festen har börjat!</span>';
+      return;
+    }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById("cd-h").textContent = String(h).padStart(2,"0");
+    document.getElementById("cd-m").textContent = String(m).padStart(2,"0");
+    document.getElementById("cd-s").textContent = String(s).padStart(2,"0");
+  }, 1000);
+}
+
+function openSetTime() {
+  const modal = document.getElementById("set-time-modal");
+  modal.style.display = "flex";
+  // Pre-fill with saved or now+2h
+  try {
+    const d = JSON.parse(localStorage.getItem("vm26_countdown") || "{}");
+    document.getElementById("input-event-name").value = d.name || "WSP Sommarfest";
+    if (d.target) {
+      // format for datetime-local
+      const dt = new Date(d.target);
+      const local = new Date(dt - dt.getTimezoneOffset()*60000).toISOString().slice(0,16);
+      document.getElementById("input-event-time").value = local;
+    } else {
+      const soon = new Date(Date.now() + 2*3600000);
+      const local = new Date(soon - soon.getTimezoneOffset()*60000).toISOString().slice(0,16);
+      document.getElementById("input-event-time").value = local;
+    }
+  } catch(e) {}
+}
+
+function closeSetTime() {
+  document.getElementById("set-time-modal").style.display = "none";
+}
+
+function saveSetTime() {
+  const name = document.getElementById("input-event-name").value.trim() || "WSP Sommarfest";
+  const val  = document.getElementById("input-event-time").value;
+  if (!val) { alert("Välj ett datum och tid!"); return; }
+  const target = new Date(val).toISOString();
+  localStorage.setItem("vm26_countdown", JSON.stringify({ target, name }));
+  startCountdown(target, name);
+  closeSetTime();
+}
+
+// ── PRINT ──
+function printOverview() {
+  renderOverview();
+  const overlay = document.getElementById("overview-overlay");
+  const wasOpen = overlay.classList.contains("open");
+  overlay.classList.add("open");
+  overlay.classList.add("visible");
+  setTimeout(() => {
+    window.print();
+    if (!wasOpen) {
+      overlay.classList.remove("visible");
+      setTimeout(() => overlay.classList.remove("open"), 250);
+    }
+  }, 100);
+}
+
+// ── DRAG AND DROP ──
+let dragSrc = null; // { playerName, fromTeam }
+
+function makeDraggable(el, playerName, fromTeam) {
+  el.draggable = true;
+  el.addEventListener("dragstart", e => {
+    dragSrc = { playerName, fromTeam };
+    el.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+  });
+  el.addEventListener("dragend", () => {
+    el.classList.remove("dragging");
+    document.querySelectorAll(".overview-team-card").forEach(c => c.classList.remove("drag-over"));
+  });
+}
+
+function setupDropZones() {
+  document.querySelectorAll(".overview-team-card").forEach(card => {
+    const toTeam = card.dataset.team;
+    card.addEventListener("dragover", e => {
+      e.preventDefault();
+      card.classList.add("drag-over");
+    });
+    card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+    card.addEventListener("drop", e => {
+      e.preventDefault();
+      card.classList.remove("drag-over");
+      if (!dragSrc || dragSrc.fromTeam === toTeam) return;
+      // Move player
+      state.assignments[dragSrc.playerName].team = toTeam;
+      save();
+      renderOverview();
+      renderTeamList();
+    });
+  });
+}
+
+
 // ── INIT ──
 load();
 buildTeamGrid();
 renderTeamList();
+loadCountdown();
 // If teams already chosen, go straight to name screen
 if (state.activeTeams.length >= 2) { showScreen("screen-name"); applyFinishedState(); }
 </script>
