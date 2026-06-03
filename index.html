@@ -1666,9 +1666,21 @@ function checkPin() {
 
 function executeAdminAction() {
   if (pinAction === "reset" || pinAction === "restart") {
-    // Clear synchronously then reload
-    try { localStorage.clear(); } catch(e) {}
-    setTimeout(() => location.reload(true), 50);
+    // Clear all keys one by one to be safe
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      keys.push(localStorage.key(i));
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+    // Verify it's empty before reloading
+    const check = setInterval(() => {
+      if (localStorage.length === 0) {
+        clearInterval(check);
+        location.reload(true);
+      } else {
+        localStorage.clear();
+      }
+    }, 50);
   }
 }
 
