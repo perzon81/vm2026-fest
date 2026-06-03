@@ -1669,15 +1669,12 @@ function executeAdminAction() {
     localStorage.removeItem("vm26_countdown");
     location.reload();
   } else if (pinAction === "restart") {
-    state.assignments = {};
-    state.finished = false;
-    lastAssigned = null;
-    save();
-    document.getElementById("name-input").value = "";
-    renderTeamList();
-    showUndoBtn();
-    applyFinishedState();
-    showScreen("screen-name");
+    // Clear assignments but keep team selection and countdown
+    const d = JSON.parse(localStorage.getItem("vm26c") || "{}");
+    d.assignments = {};
+    d.finished = false;
+    localStorage.setItem("vm26c", JSON.stringify(d));
+    location.reload();
   }
 }
 
