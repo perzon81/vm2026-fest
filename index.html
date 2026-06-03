@@ -420,6 +420,64 @@ html, body {
 
 
 
+
+/* ── TEAM COLOR BACKGROUND FLASH ── */
+.team-color-flash {
+  position: fixed; inset: 0; z-index: 996;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.team-color-flash.active { opacity: 1; }
+
+/* ── ROULETTE SPIN ── */
+#screen-spin .spin-roulette {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0; overflow: hidden; height: 80px; position: relative;
+  width: 100%; max-width: 300px;
+}
+.roulette-track {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.3rem;
+  transition: transform 0s;
+}
+.roulette-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  height: 72px; flex-shrink: 0; width: 100%;
+  justify-content: center; opacity: 0.4;
+  transition: opacity 0.1s;
+}
+.roulette-item.center { opacity: 1; transform: scale(1.08); }
+.roulette-item-flag { flex-shrink: 0; }
+.roulette-item-name {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.6rem; letter-spacing: 0.06em; color: white;
+  white-space: nowrap;
+}
+.roulette-highlight {
+  position: absolute; inset-x: 0; top: 50%;
+  transform: translateY(-50%);
+  height: 72px;
+  border-top: 2px solid var(--gold);
+  border-bottom: 2px solid var(--gold);
+  pointer-events: none; z-index: 2;
+  box-shadow: 0 0 20px rgba(245,197,24,0.3);
+}
+
+/* ── UNDO BUTTON ── */
+.btn-undo {
+  padding: 0.55rem 1rem;
+  background: rgba(0,0,0,0.75);
+  border: 1.5px solid rgba(255,165,0,0.35);
+  border-radius: 40px; color: rgba(255,165,0,0.85);
+  font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  transition: background 0.15s, transform 0.15s, opacity 0.3s;
+  opacity: 0; pointer-events: none;
+}
+.btn-undo.visible { opacity: 1; pointer-events: auto; }
+.btn-undo:hover { background: rgba(255,140,0,0.25); transform: translateY(-2px); }
+
 /* ── DELETE BUTTON ── */
 .btn-delete-player {
   margin-left: auto; flex-shrink: 0;
@@ -773,12 +831,17 @@ html, body {
     <button class="btn btn-ghost" id="btn-cam-back">← Tillbaka</button>
   </div>
 
-  <!-- SCREEN 3: Spin -->
-  <div class="card screen" id="screen-spin" style="padding:2.5rem 1.5rem">
+  <!-- SCREEN 3: Spin (roulette) -->
+  <div class="card screen" id="screen-spin" style="padding:2rem 1.5rem;align-items:center;gap:1rem">
     <div class="spin-name" id="spin-label"></div>
-    <span class="spin-ball">⚽</span>
+    <div style="position:relative;width:100%;max-width:300px">
+      <div class="spin-roulette">
+        <div class="roulette-track" id="roulette-track"></div>
+      </div>
+      <div class="roulette-highlight"></div>
+    </div>
     <div class="loading-dots"><span></span><span></span><span></span></div>
-    <div style="font-size:0.78rem;color:rgba(255,255,255,0.45);letter-spacing:0.12em;text-transform:uppercase">Lottar lag...</div>
+    <div style="font-size:0.78rem;color:rgba(255,255,255,0.45);letter-spacing:0.12em;text-transform:uppercase" id="spin-status">Lottar lag...</div>
   </div>
 
   <!-- SCREEN 4: Result -->
@@ -821,8 +884,12 @@ html, body {
     <div class="team-pills" id="current-teams"></div>
   </div>
 
+  <!-- Team color flash overlay -->
+  <div class="team-color-flash" id="team-color-flash"></div>
+
   <!-- Floating buttons -->
   <div class="float-btns">
+    <button class="btn-undo" id="btn-undo" onclick="undoLast()">↩ Ångra senaste</button>
     <button class="btn-overview" id="btn-overview" onclick="openOverview()">📊 Översikt</button>
     <button class="btn-print" id="btn-print-float" onclick="openOverview();setTimeout(printOverview,300)">🖨 Skriv ut</button>
     <button class="btn-finish" id="btn-finish" onclick="finishLottery()">🔒 Avsluta lottning</button>
@@ -1123,13 +1190,22 @@ function doAssign(name, team, avatarUrl) {
   showScreen("screen-result");
   spawnConfetti();
   spawnReactions(team.color);
+  flashTeamColors(team);
+  lastAssigned = { name, teamName: team.name };
+  showUndoBtn();
   announceTeam(name, team.name);
 }
 
 function startSpin(name, team, avatarUrl) {
   document.getElementById("spin-label").textContent = name + "!";
+  document.getElementById("spin-status").textContent = "Lottar lag...";
   showScreen("screen-spin");
-  setTimeout(() => doAssign(name, team, avatarUrl), 1600);
+  // Small delay before roulette starts so screen transition is done
+  setTimeout(() => {
+    runRoulette(team, () => {
+      setTimeout(() => doAssign(name, team, avatarUrl), 600);
+    });
+  }, 200);
 }
 
 // ── CAMERA ──
@@ -1374,6 +1450,104 @@ function spawnReactions(teamColor) {
   }, 700);
 }
 
+
+
+// ── TEAM COLOR BACKGROUND FLASH ──
+function flashTeamColors(team) {
+  const el = document.getElementById("team-color-flash");
+  // Create a gradient from team color
+  el.style.background = `radial-gradient(ellipse at center, ${team.color}cc 0%, ${team.color}66 40%, transparent 75%)`;
+  el.classList.add("active");
+  setTimeout(() => el.classList.remove("active"), 1800);
+}
+
+// ── ROULETTE SPIN ──
+function runRoulette(finalTeam, onDone) {
+  const track = document.getElementById("roulette-track");
+  const teams = state.activeTeams;
+  if (!teams.length) { onDone(); return; }
+
+  // Build a long list: random teams + final team at end
+  const itemCount = 24;
+  const items = [];
+  for (let i = 0; i < itemCount - 1; i++) {
+    items.push(teams[Math.floor(Math.random() * teams.length)]);
+  }
+  items.push(finalTeam);
+
+  // Render all items
+  track.innerHTML = items.map((t, i) => `
+    <div class="roulette-item" id="ri-${i}">
+      <div class="roulette-item-flag">${flagImg(t.fc, 32)}</div>
+      <div class="roulette-item-name">${t.name}</div>
+    </div>
+  `).join("");
+
+  const itemH = 76; // height + gap
+  let current = 0;
+  let delay = 40; // start fast
+  const maxDelay = 220; // slow down to this
+
+  function step() {
+    // Remove center class from old
+    const prev = document.getElementById(`ri-${current}`);
+    if (prev) prev.classList.remove("center");
+
+    current++;
+    const el = document.getElementById(`ri-${current}`);
+    if (el) el.classList.add("center");
+
+    // Scroll track
+    track.style.transition = `transform ${delay * 0.9}ms ease`;
+    track.style.transform = `translateY(-${current * itemH - 4}px)`;
+
+    // Ease out — speed decreases as we approach the end
+    const remaining = itemCount - current;
+    if (remaining > 0) {
+      // Accelerate first third, decelerate last two thirds
+      if (current < itemCount * 0.35) {
+        delay = Math.max(35, delay * 0.92);
+      } else {
+        delay = Math.min(maxDelay, delay * 1.18);
+      }
+      setTimeout(step, delay);
+    } else {
+      // Landing on final team
+      setTimeout(() => {
+        document.getElementById("spin-status").textContent = "🎯 " + finalTeam.name.toUpperCase() + "!";
+        onDone();
+      }, 400);
+    }
+  }
+
+  setTimeout(step, 100);
+}
+
+// ── UNDO LAST ──
+let lastAssigned = null; // { name, teamName }
+
+function showUndoBtn() {
+  const btn = document.getElementById("btn-undo");
+  if (lastAssigned) {
+    btn.textContent = `↩ Ångra ${lastAssigned.name}`;
+    btn.classList.add("visible");
+  } else {
+    btn.classList.remove("visible");
+  }
+}
+
+function undoLast() {
+  if (!lastAssigned) return;
+  if (!confirm(`Ta bort ${lastAssigned.name} från ${lastAssigned.teamName} och lotta om?`)) return;
+  delete state.assignments[lastAssigned.name];
+  save();
+  renderTeamList();
+  lastAssigned = null;
+  showUndoBtn();
+  // Go back to name screen
+  document.getElementById("name-input").value = "";
+  showScreen("screen-name");
+}
 
 // ── DUPLICATE WARNING ──
 function showDuplicateWarning(existingName, team) {
