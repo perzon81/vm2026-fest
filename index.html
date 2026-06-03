@@ -1211,50 +1211,7 @@ function spawnConfetti() {
 
 // ── VOICE ANNOUNCEMENT ──
 function announceTeam(playerName, teamName) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-
-  // Check if this player is the first (captain) of their team
-  const teamPlayers = Object.values(state.assignments).filter(a => a.team === teamName);
-  const isCaptain = teamPlayers.length === 1;
-
-  const phrases = isCaptain ? [
-    `${playerName}... you are playing for ${teamName}... and you are the captain!`,
-    `${playerName} joins ${teamName} as team captain!`,
-    `Welcome ${playerName}! You are the captain of ${teamName}!`,
-  ] : [
-    `${playerName}... you are playing for... ${teamName}!`,
-    `${playerName}! Welcome to ${teamName}!`,
-    `And ${playerName} will play for... ${teamName}!`,
-    `The crowd goes wild! ${playerName} joins ${teamName}!`,
-  ];
-  const text = phrases[Math.floor(Math.random() * phrases.length)];
-
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "en-GB";
-  utter.rate = 0.95;
-  utter.pitch = 1.0;
-  utter.volume = 1;
-
-  // Wait for voices to load, then pick a deep English male voice
-  const pickVoice = () => {
-    const voices = window.speechSynthesis.getVoices();
-    // Prefer natural-sounding English voices, avoid robotic ones
-    const preferred = voices.find(v => /daniel|arthur|oliver|george|aaron|karen|samantha|alex/i.test(v.name));
-    const enGB = voices.find(v => v.lang === "en-GB" && !v.name.toLowerCase().includes("compact"));
-    const enUS = voices.find(v => v.lang === "en-US" && !v.name.toLowerCase().includes("compact"));
-    const anyEn = voices.find(v => v.lang.startsWith("en"));
-    utter.voice = preferred || enGB || enUS || anyEn || null;
-  };
-
-  if (window.speechSynthesis.getVoices().length > 0) {
-    pickVoice();
-  } else {
-    window.speechSynthesis.onvoiceschanged = pickVoice;
-  }
-
-  // Small delay so confetti and card animation start first
-  setTimeout(() => window.speechSynthesis.speak(utter), 400);
+  // Voice disabled
 }
 
 function doAssign(name, team, avatarUrl) {
