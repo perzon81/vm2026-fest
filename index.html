@@ -519,6 +519,18 @@ html, body {
   80%     { transform: translateX(5px); }
 }
 
+.btn-fullscreen {
+  padding: 0.65rem 1.1rem;
+  background: rgba(0,0,0,0.75);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 40px; color: white;
+  font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-fullscreen:hover { background: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
 /* ── DELETE BUTTON ── */
 .btn-delete-player {
   margin-left: auto; flex-shrink: 0;
@@ -932,6 +944,7 @@ html, body {
   <!-- Floating buttons -->
   <div class="float-btns">
     <button class="btn-undo" id="btn-undo" onclick="undoLast()">↩ Ångra senaste</button>
+    <button class="btn-fullscreen" id="btn-fullscreen" onclick="toggleFullscreen()">⛶ Fullskärm</button>
     <button class="btn-overview" id="btn-overview" onclick="openOverview()">📊 Översikt</button>
     <button class="btn-print" id="btn-print-float" onclick="openOverview();setTimeout(printOverview,300)">🖨 Skriv ut</button>
     <button class="btn-finish" id="btn-finish" onclick="finishLottery()">🔒 Avsluta lottning</button>
@@ -1578,6 +1591,24 @@ function undoLast() {
   showScreen("screen-name");
 }
 
+
+// ── FULLSCREEN ──
+function toggleFullscreen() {
+  const btn = document.getElementById("btn-fullscreen");
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      btn.textContent = "✕ Avsluta fullskärm";
+    }).catch(() => {});
+  } else {
+    document.exitFullscreen().then(() => {
+      btn.textContent = "⛶ Fullskärm";
+    }).catch(() => {});
+  }
+}
+document.addEventListener("fullscreenchange", () => {
+  const btn = document.getElementById("btn-fullscreen");
+  btn.textContent = document.fullscreenElement ? "✕ Avsluta fullskärm" : "⛶ Fullskärm";
+});
 
 // ── PIN / LÖSENORD ──
 const ADMIN_PIN = "1981"; // Ändra detta till önskat PIN
