@@ -707,15 +707,16 @@ html, body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1.25rem 1.25rem 3rem;
   overflow-y: auto;
+  overflow-x: visible;
   flex: 1;
 }
 
 .overview-team-card {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px; overflow: hidden;
+  border-radius: 12px; overflow: visible;
   animation: fadeSlideIn 0.3s ease both;
 }
 @keyframes fadeSlideIn {
@@ -742,6 +743,7 @@ html, body {
 .overview-players {
   padding: 0.6rem 0.75rem;
   display: flex; flex-direction: column; gap: 0.4rem;
+  overflow: visible;
 }
 .overview-player {
   display: flex; align-items: center; gap: 0.5rem;
@@ -1228,17 +1230,19 @@ function announceTeam(playerName, teamName) {
 
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = "en-GB";
-  utter.rate = 0.82;
-  utter.pitch = 0.9;
+  utter.rate = 0.95;
+  utter.pitch = 1.0;
   utter.volume = 1;
 
   // Wait for voices to load, then pick a deep English male voice
   const pickVoice = () => {
     const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => /daniel|arthur|oliver|george|aaron/i.test(v.name));
-    const enGB = voices.find(v => v.lang === "en-GB");
-    const enUS = voices.find(v => v.lang === "en-US");
-    utter.voice = preferred || enGB || enUS || voices[0] || null;
+    // Prefer natural-sounding English voices, avoid robotic ones
+    const preferred = voices.find(v => /daniel|arthur|oliver|george|aaron|karen|samantha|alex/i.test(v.name));
+    const enGB = voices.find(v => v.lang === "en-GB" && !v.name.toLowerCase().includes("compact"));
+    const enUS = voices.find(v => v.lang === "en-US" && !v.name.toLowerCase().includes("compact"));
+    const anyEn = voices.find(v => v.lang.startsWith("en"));
+    utter.voice = preferred || enGB || enUS || anyEn || null;
   };
 
   if (window.speechSynthesis.getVoices().length > 0) {
@@ -1322,8 +1326,7 @@ function handleNameSubmit(withCamera) {
   state.currentTeam = pickTeam();
 
   if (withCamera) {
-    document.getElementById("cam-label").textContent =
-      state.currentName + " → " + state.currentTeam.flag + " " + state.currentTeam.name;
+    document.getElementById("cam-label").textContent = state.currentName + " 📸";
     showScreen("screen-camera");
     startCamera();
   } else {
