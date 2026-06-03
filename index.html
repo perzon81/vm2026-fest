@@ -478,6 +478,47 @@ html, body {
 .btn-undo.visible { opacity: 1; pointer-events: auto; }
 .btn-undo:hover { background: rgba(255,140,0,0.25); transform: translateY(-2px); }
 
+
+/* ── PIN MODAL ── */
+.pin-dots {
+  display: flex; gap: 0.75rem; justify-content: center; margin: 0.5rem 0;
+}
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pin-dot.filled { background: var(--gold); border-color: var(--gold); }
+.pin-dot.error  { background: #f87171; border-color: #f87171; }
+
+.pin-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem; width: 100%;
+}
+.pin-key {
+  padding: 0.85rem; border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: white; font-size: 1.2rem; font-weight: 600;
+  cursor: pointer; text-align: center;
+  transition: background 0.1s, transform 0.1s;
+  font-family: 'Inter', sans-serif;
+}
+.pin-key:hover  { background: rgba(255,255,255,0.16); }
+.pin-key:active { transform: scale(0.93); background: rgba(245,197,24,0.25); }
+.pin-key.del    { color: #f87171; }
+.pin-shake {
+  animation: pinShake 0.4s ease;
+}
+@keyframes pinShake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-8px); }
+  40%     { transform: translateX(8px); }
+  60%     { transform: translateX(-5px); }
+  80%     { transform: translateX(5px); }
+}
+
 /* ── DELETE BUTTON ── */
 .btn-delete-player {
   margin-left: auto; flex-shrink: 0;
@@ -1030,16 +1071,7 @@ document.getElementById("btn-back-to-teams").addEventListener("click", () => {
 });
 
 document.getElementById("btn-full-reset").addEventListener("click", () => {
-  if (confirm("Rensa allt – spelare OCH lagval – och börja om från början?")) {
-    state.assignments = {};
-    state.activeTeams = [];
-    state.selectedTeams = new Set();
-    localStorage.removeItem("vm26c");
-    document.getElementById("name-input").value = "";
-    renderTeamList();
-    buildTeamGrid();
-    showScreen("screen-teams");
-  }
+  openPinModal("reset");
 });
 
 // ── TEAM PICKING ──
@@ -1277,11 +1309,7 @@ document.getElementById("btn-new-player").addEventListener("click", ()=>{
   renderTeamList(); showScreen("screen-name");
 });
 document.getElementById("btn-restart").addEventListener("click", ()=>{
-  if (confirm("Rensa alla spelare och börja om?")) {
-    state.assignments={}; save();
-    document.getElementById("name-input").value="";
-    renderTeamList(); showScreen("screen-name");
-  }
+  openPinModal("restart");
 });
 
 
@@ -1549,6 +1577,106 @@ function undoLast() {
   showScreen("screen-name");
 }
 
+
+// ── PIN / LÖSENORD ──
+const ADMIN_PIN = "1926"; // Ändra detta till önskat PIN
+let pinBuffer = "";
+let pinAction = null;
+
+function openPinModal(action) {
+  pinAction = action;
+  pinBuffer = "";
+  updatePinDots();
+  document.getElementById("pin-hint").textContent = "Ange PIN-kod för att återställa";
+  document.getElementById("pin-hint").style.color = "rgba(255,255,255,0.5)";
+  document.getElementById("pin-modal").style.display = "flex";
+}
+
+function closePinModal() {
+  document.getElementById("pin-modal").style.display = "none";
+  pinBuffer = "";
+  pinAction = null;
+}
+
+function updatePinDots(error = false) {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById("pd" + i);
+    dot.classList.toggle("filled", i < pinBuffer.length && !error);
+    dot.classList.toggle("error", error);
+  }
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(checkPin, 120);
+  }
+}
+
+function pinBackspace() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = "";
+  updatePinDots();
+}
+
+function checkPin() {
+  if (pinBuffer === ADMIN_PIN) {
+    closePinModal();
+    executeAdminAction();
+  } else {
+    // Wrong PIN — shake and flash red
+    updatePinDots(true);
+    const grid = document.getElementById("pin-grid");
+    grid.classList.add("pin-shake");
+    document.getElementById("pin-hint").textContent = "Fel PIN-kod, försök igen";
+    document.getElementById("pin-hint").style.color = "#f87171";
+    setTimeout(() => {
+      grid.classList.remove("pin-shake");
+      pinBuffer = "";
+      updatePinDots(false);
+    }, 500);
+  }
+}
+
+function executeAdminAction() {
+  if (pinAction === "reset") {
+    state.assignments = {};
+    state.activeTeams = [];
+    state.selectedTeams = new Set();
+    state.finished = false;
+    lastAssigned = null;
+    localStorage.removeItem("vm26c");
+    document.getElementById("name-input").value = "";
+    renderTeamList();
+    buildTeamGrid();
+    showUndoBtn();
+    showScreen("screen-teams");
+  } else if (pinAction === "restart") {
+    state.assignments = {};
+    state.finished = false;
+    lastAssigned = null;
+    save();
+    document.getElementById("name-input").value = "";
+    renderTeamList();
+    showUndoBtn();
+    showScreen("screen-name");
+  }
+}
+
+// Allow typing PIN with keyboard too
+document.addEventListener("keydown", e => {
+  if (document.getElementById("pin-modal").style.display !== "flex") return;
+  if (e.key >= "0" && e.key <= "9") pinPress(e.key);
+  else if (e.key === "Backspace") pinBackspace();
+  else if (e.key === "Escape") closePinModal();
+});
+
 // ── DUPLICATE WARNING ──
 function showDuplicateWarning(existingName, team) {
   const modal = document.getElementById("duplicate-modal");
@@ -1738,6 +1866,36 @@ if (state.activeTeams.length >= 2) { showScreen("screen-name"); applyFinishedSta
       <button class="btn btn-ghost" onclick="closeDeleteModal()">Avbryt</button>
       <button class="btn-danger btn" id="btn-confirm-delete">🗑 Ta bort</button>
     </div>
+  </div>
+</div>
+
+
+<!-- PIN MODAL -->
+<div class="modal-overlay" id="pin-modal">
+  <div class="modal-box" style="max-width:300px">
+    <div class="modal-title" style="text-align:center">🔐 Admin</div>
+    <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);text-align:center" id="pin-hint">Ange PIN-kod för att återställa</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-grid" id="pin-grid">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key del" onclick="pinClear()">✕</button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinBackspace()">⌫</button>
+    </div>
+    <button class="btn btn-ghost" onclick="closePinModal()" style="font-size:0.85rem;padding:0.65rem;margin-top:0.25rem">Avbryt</button>
   </div>
 </div>
 
