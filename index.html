@@ -837,8 +837,20 @@ html, body {
         <input class="name-input" id="input-event-name" type="text" value="WSP Sommarfest" maxlength="30" />
       </div>
       <div>
-        <div class="label-text">Datum &amp; tid</div>
-        <input class="name-input" id="input-event-time" type="datetime-local" />
+        <div class="label-text">Datum</div>
+        <input class="name-input" id="input-event-date" type="date" />
+      </div>
+      <div>
+        <div class="label-text">Tid (24h)</div>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <select class="name-input" id="input-event-hour" style="flex:1;cursor:pointer">
+            ${Array.from({length:24},(_,i)=>`<option value="${i}">${String(i).padStart(2,'0')}</option>`).join('')}
+          </select>
+          <span style="font-size:1.4rem;color:rgba(255,255,255,0.5);font-weight:700">:</span>
+          <select class="name-input" id="input-event-min" style="flex:1;cursor:pointer">
+            ${Array.from({length:60},(_,i)=>`<option value="${i}">${String(i).padStart(2,'0')}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <button class="btn btn-gold" onclick="saveSetTime()">SPARA</button>
       <button class="btn btn-ghost" onclick="closeSetTime()" style="font-size:0.85rem;padding:0.65rem">Avbryt</button>
@@ -1803,20 +1815,17 @@ function startCountdown(isoTarget, name) {
 function openSetTime() {
   const modal = document.getElementById("set-time-modal");
   modal.style.display = "flex";
-  // Pre-fill with saved or now+2h
   try {
     const d = JSON.parse(localStorage.getItem("vm26_countdown") || "{}");
     document.getElementById("input-event-name").value = d.name || "WSP Sommarfest";
-    if (d.target) {
-      // format for datetime-local
-      const dt = new Date(d.target);
-      const local = new Date(dt - dt.getTimezoneOffset()*60000).toISOString().slice(0,16);
-      document.getElementById("input-event-time").value = local;
-    } else {
-      const soon = new Date(Date.now() + 2*3600000);
-      const local = new Date(soon - soon.getTimezoneOffset()*60000).toISOString().slice(0,16);
-      document.getElementById("input-event-time").value = local;
-    }
+    const dt = d.target ? new Date(d.target) : new Date(Date.now() + 2*3600000);
+    // date in local YYYY-MM-DD
+    const y = dt.getFullYear();
+    const mo = String(dt.getMonth()+1).padStart(2,"0");
+    const day = String(dt.getDate()).padStart(2,"0");
+    document.getElementById("input-event-date").value = `${y}-${mo}-${day}`;
+    document.getElementById("input-event-hour").value = dt.getHours();
+    document.getElementById("input-event-min").value = dt.getMinutes();
   } catch(e) {}
 }
 
@@ -1826,9 +1835,13 @@ function closeSetTime() {
 
 function saveSetTime() {
   const name = document.getElementById("input-event-name").value.trim() || "WSP Sommarfest";
-  const val  = document.getElementById("input-event-time").value;
-  if (!val) { alert("Välj ett datum och tid!"); return; }
-  const target = new Date(val).toISOString();
+  const dateVal = document.getElementById("input-event-date").value;
+  if (!dateVal) { alert("Välj ett datum!"); return; }
+  const h = parseInt(document.getElementById("input-event-hour").value);
+  const m = parseInt(document.getElementById("input-event-min").value);
+  // Build local date from parts (avoids timezone issues)
+  const [y, mo, d] = dateVal.split("-").map(Number);
+  const target = new Date(y, mo-1, d, h, m, 0).toISOString();
   localStorage.setItem("vm26_countdown", JSON.stringify({ target, name }));
   startCountdown(target, name);
   closeSetTime();
