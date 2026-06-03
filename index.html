@@ -418,6 +418,46 @@ html, body {
   .overview-avatar-placeholder { color: #999 !important; }
 }
 
+
+/* ── PUBLIK-REAKTIONER ── */
+.reaction {
+  position: fixed;
+  pointer-events: none;
+  z-index: 998;
+  font-size: 4rem;
+  line-height: 1;
+  animation: reactionFloat linear forwards;
+  user-select: none;
+}
+@keyframes reactionFloat {
+  0%   { transform: translateY(0) scale(0.5) rotate(0deg); opacity: 1; }
+  20%  { transform: translateY(-15vh) scale(1.2) rotate(-5deg); opacity: 1; }
+  80%  { transform: translateY(-70vh) scale(0.9) rotate(8deg); opacity: 0.8; }
+  100% { transform: translateY(-100vh) scale(0.6) rotate(15deg); opacity: 0; }
+}
+
+.reaction-burst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 997;
+  display: flex; align-items: center; justify-content: center;
+  animation: burstFade 0.6s ease forwards;
+}
+@keyframes burstFade {
+  0%   { opacity: 0; transform: scale(0.5); }
+  40%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+.reaction-burst-text {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: clamp(3rem, 12vw, 7rem);
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-shadow: 0 0 40px currentColor, 0 4px 20px rgba(0,0,0,0.5);
+  line-height: 1.1;
+}
+
 /* CONFETTI */
 .confetti-piece { position:fixed;pointer-events:none;z-index:999;width:8px;height:8px;border-radius:2px;animation:cfFall linear forwards; }
 @keyframes cfFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
@@ -1041,6 +1081,7 @@ function doAssign(name, team, avatarUrl) {
   renderFormation(team, name);
   showScreen("screen-result");
   spawnConfetti();
+  spawnReactions(team.color);
   announceTeam(name, team.name);
 }
 
@@ -1238,6 +1279,57 @@ function renderOverview() {
 // Close overlay on ESC
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeOverview(); });
 
+
+
+// ── PUBLIK-REAKTIONER ──
+const REACTIONS = [
+  { emojis: ["🔥","🔥","🔥"], text: "ON FIRE!", color: "#ff6b35" },
+  { emojis: ["⚽","🎯","💥"], text: "GOLAZO!", color: "#f5c518" },
+  { emojis: ["👑","✨","🏆"], text: "LEGENDARY!", color: "#f5c518" },
+  { emojis: ["💪","🦾","⚡"], text: "BEAST MODE!", color: "#4ade80" },
+  { emojis: ["🎉","🎊","🥳"], text: "LET'S GO!", color: "#a78bfa" },
+  { emojis: ["😱","🤯","💫"], text: "UNBELIEVABLE!", color: "#60a5fa" },
+  { emojis: ["🐐","⭐","🌟"], text: "GOAT!", color: "#f5c518" },
+  { emojis: ["🚀","💥","🔥"], text: "ROCKET!", color: "#ff6b35" },
+];
+
+function spawnReactions(teamColor) {
+  const reaction = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
+
+  // Spawn floating emojis from bottom
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => {
+      const el = document.createElement("div");
+      el.className = "reaction";
+      el.textContent = reaction.emojis[Math.floor(Math.random() * reaction.emojis.length)];
+      el.style.left = (5 + Math.random() * 90) + "vw";
+      el.style.bottom = (Math.random() * 15) + "vh";
+      el.style.fontSize = (2.5 + Math.random() * 3) + "rem";
+      el.style.animationDuration = (1.8 + Math.random() * 1.4) + "s";
+      el.style.animationDelay = (Math.random() * 0.3) + "s";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }, i * 60);
+  }
+
+  // Big text burst in center
+  const burst = document.createElement("div");
+  burst.className = "reaction-burst";
+  burst.innerHTML = `<div class="reaction-burst-text" style="color:${reaction.color}">${reaction.text}</div>`;
+  burst.style.animationDuration = "0.9s";
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 1000);
+
+  // Second burst with team color after delay
+  setTimeout(() => {
+    const burst2 = document.createElement("div");
+    burst2.className = "reaction-burst";
+    burst2.innerHTML = `<div class="reaction-burst-text" style="color:${teamColor};font-size:clamp(2rem,8vw,5rem)">${reaction.emojis.join(" ")}</div>`;
+    burst2.style.animationDuration = "1.1s";
+    document.body.appendChild(burst2);
+    setTimeout(() => burst2.remove(), 1200);
+  }, 700);
+}
 
 // ── COUNTDOWN ──
 let countdownInterval = null;
