@@ -41,17 +41,14 @@ html, body {
 
 /* WSP Logo block */
 .wsp-logo {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
-.wsp-letters {
-  font-family: 'Inter', sans-serif;
-  font-size: 2.8rem; font-weight: 700; letter-spacing: 0.18em;
-  color: #DA291C;
-  text-shadow: 0 2px 20px rgba(218,41,28,0.35);
-  line-height: 1;
+.wsp-svg {
+  width: 90px; height: auto;
+  filter: drop-shadow(0 2px 12px rgba(218,41,28,0.35));
 }
 .wsp-city {
-  font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase;
+  font-size: 0.68rem; letter-spacing: 0.28em; text-transform: uppercase;
   color: rgba(255,255,255,0.5); font-weight: 500;
 }
 
@@ -791,8 +788,15 @@ html, body {
 <div class="app">
   <div class="header">
     <div class="wsp-logo">
-      <span class="wsp-letters">WSP</span>
-      <div class="wsp-city">Västerås</div>
+      <svg viewBox="0 0 180 70" xmlns="http://www.w3.org/2000/svg" class="wsp-svg">
+        <!-- W -->
+        <polygon points="0,8 14,8 22,42 30,8 44,8 52,42 60,8 74,8 58,62 42,62 37,32 32,62 16,62" fill="#DA291C"/>
+        <!-- S -->
+        <path d="M80,8 L118,8 L118,22 L94,22 L94,30 L116,30 C118,30 120,32 120,34 L120,56 C120,58 118,60 116,60 L78,60 L78,46 L104,46 L104,38 L82,38 C80,38 78,36 78,34 L78,10 C78,8.9 78.9,8 80,8 Z" fill="#DA291C"/>
+        <!-- P -->
+        <path d="M126,8 L164,8 C166,8 168,10 168,12 L168,38 C168,40 166,42 164,42 L140,42 L140,60 L126,60 Z M140,22 L140,30 L152,30 L152,22 Z" fill="#DA291C"/>
+      </svg>
+      <div class="wsp-city">Örnsköldsvik</div>
     </div>
     <div class="wsp-divider"></div>
     <div class="wsp-event">
