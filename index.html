@@ -1065,13 +1065,20 @@ function buildTeamGrid() {
     const isSelected = state.selectedTeams.has(t.name);
     return `
     <div class="team-toggle ${isSelected ? 'selected' : ''}"
-         data-team="${t.name}"
-         onclick="toggleTeam('${t.name}')">
+         data-team="${t.name}">
       <div class="team-toggle-flag">${flagImg(t.fc, 36)}</div>
       <div class="team-toggle-name">${t.name}</div>
       <div class="team-toggle-check">${isSelected ? '✓' : ''}</div>
     </div>`;
   }).join("");
+
+  // Use mousedown/touchstart instead of click to avoid double-tap issue
+  document.querySelectorAll(".team-toggle").forEach(el => {
+    el.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      toggleTeam(el.dataset.team);
+    });
+  });
   updateSelectionCount();
 }
 
